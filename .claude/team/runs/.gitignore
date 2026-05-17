@@ -1,0 +1,6 @@
+# Each CLI invocation creates a sub-folder here with meta.env + output.log.
+# These are per-machine, per-run; don't commit them.
+*
+!.gitignore
+!.gitkeep
+!leader-*.md

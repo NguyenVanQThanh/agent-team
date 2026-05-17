@@ -1,0 +1,20 @@
+# Per-machine, per-run artifacts
+.claude/team/runs/*/
+.claude/team/runs/_*
+.claude/team/status/*.env
+!.claude/team/runs/.gitkeep
+!.claude/team/runs/.gitignore
+!.claude/team/status/.gitkeep
+!.claude/team/runs/leader-*.md
+
+# Local Claude / DeepSeek caches that may hold credentials
+.deepseek/
+.claude/.cache/
+.claude/projects/
+
+# Standard
+.env
+.env.local
+.env.*.local
+node_modules/
+*.log
