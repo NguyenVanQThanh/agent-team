@@ -14,8 +14,9 @@
 : "${CODEX_FLAGS:=exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox}"
 
 # ---- DeepSeek CLI / TUI (dev3, dev4) ----
-# `deepseek` (the npm wrapper) accepts -p for one-shot and --yolo for auto-approve.
-: "${DEEPSEEK_FLAGS:=-p --yolo}"
+# `exec --auto` = agentic mode with write_file + exec_shell tools (v0.8.x+).
+# `-p` was text-only (no FS writes). `--yolo` removed in v0.8.x.
+: "${DEEPSEEK_FLAGS:=exec --auto}"
 
 # Export so child processes (CLIs) see them.
 export OPUS_BIN OPUS_FLAGS CODEX_FLAGS DEEPSEEK_FLAGS

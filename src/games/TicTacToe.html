@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tic Tac Toe</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: #172033;
+        background: #f4f7fb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at top left, rgba(24, 126, 180, 0.16), transparent 32rem),
+          linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+      }
+
+      .game-shell {
+        width: min(100%, 420px);
+        display: grid;
+        gap: 22px;
+        justify-items: center;
+        padding: 28px;
+        border: 1px solid rgba(23, 32, 51, 0.1);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 24px 70px rgba(23, 32, 51, 0.16);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 8vw, 3rem);
+        line-height: 1;
+        text-align: center;
+      }
+
+      .status {
+        min-width: 164px;
+        padding: 10px 16px;
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        border-radius: 8px;
+        background: #ecfdf5;
+        color: #0f766e;
+        font-size: 1.1rem;
+        font-weight: 800;
+        text-align: center;
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(72px, 92px));
+        grid-template-rows: repeat(3, minmax(72px, 92px));
+        gap: 10px;
+        width: 100%;
+        max-width: 296px;
+        aspect-ratio: 1;
+      }
+
+      .square {
+        width: 100%;
+        height: 100%;
+        border: 1px solid rgba(23, 32, 51, 0.16);
+        border-radius: 8px;
+        background: #ffffff;
+        color: #172033;
+        cursor: pointer;
+        font: 900 clamp(2rem, 12vw, 3rem) / 1 Inter, ui-sans-serif, system-ui, sans-serif;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 10px 24px rgba(23, 32, 51, 0.08);
+        transition:
+          transform 140ms ease,
+          border-color 140ms ease,
+          box-shadow 140ms ease,
+          background 140ms ease;
+      }
+
+      .square:hover,
+      .square:focus-visible {
+        border-color: #2563eb;
+        background: #f8fbff;
+        box-shadow: 0 14px 28px rgba(37, 99, 235, 0.16);
+        transform: translateY(-1px);
+      }
+
+      .square:focus-visible,
+      .restart:focus-visible {
+        outline: 3px solid rgba(37, 99, 235, 0.26);
+        outline-offset: 3px;
+      }
+
+      .restart {
+        border: 0;
+        border-radius: 8px;
+        background: #172033;
+        color: #ffffff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 800;
+        padding: 11px 18px;
+        min-width: 120px;
+        transition:
+          transform 140ms ease,
+          background 140ms ease,
+          box-shadow 140ms ease;
+      }
+
+      .restart:hover {
+        background: #0f172a;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.2);
+        transform: translateY(-1px);
+      }
+
+      @media (max-width: 380px) {
+        body {
+          padding: 16px;
+        }
+
+        .game-shell {
+          padding: 22px;
+        }
+
+        .board {
+          gap: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel">
+      const { useMemo, useState } = React;
+
+      const WINNING_LINES = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6],
+      ];
+
+      const EMPTY_BOARD = Array(9).fill(null);
+
+      function getWinner(board) {
+        for (const [a, b, c] of WINNING_LINES) {
+          if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return board[a];
+          }
+        }
+
+        return null;
+      }
+
+      function TicTacToe() {
+        const [board, setBoard] = useState(EMPTY_BOARD);
+        const [nextPlayer, setNextPlayer] = useState("X");
+
+        const winner = useMemo(() => getWinner(board), [board]);
+        const isDraw = !winner && board.every(Boolean);
+        const status = winner
+          ? `Winner: ${winner}`
+          : isDraw
+            ? "Draw"
+            : `Next: ${nextPlayer}`;
+
+        function handleSquareClick(index) {
+          if (board[index] || winner || isDraw) {
+            return;
+          }
+
+          setBoard((currentBoard) => {
+            const nextBoard = [...currentBoard];
+            nextBoard[index] = nextPlayer;
+            return nextBoard;
+          });
+          setNextPlayer((currentPlayer) => (currentPlayer === "X" ? "O" : "X"));
+        }
+
+        function restartGame() {
+          setBoard(EMPTY_BOARD);
+          setNextPlayer("X");
+        }
+
+        return (
+          <main className="game-shell" aria-label="Tic Tac Toe">
+            <h1>Tic Tac Toe</h1>
+
+            <div className="status" aria-live="polite">
+              {status}
+            </div>
+
+            <div className="board" role="grid" aria-label="Tic Tac Toe board">
+              {board.map((value, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className="square"
+                  onClick={() => handleSquareClick(index)}
+                  aria-label={`Square ${index + 1}${value ? `, ${value}` : ""}`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+
+            <button type="button" className="restart" onClick={restartGame}>
+              Restart
+            </button>
+          </main>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<TicTacToe />);
+    </script>
+  </body>
+</html>

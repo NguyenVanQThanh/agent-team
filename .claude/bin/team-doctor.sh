@@ -161,7 +161,7 @@ if (( QUICK == 0 )); then
 
   (( codex_ok ))    && probe "codex"    "codex exec --skip-git-repo-check 'say hello in 5 words' 2>&1 || codex -p 'say hello in 5 words' 2>&1 || codex 'say hello in 5 words' 2>&1" \
                    || note "skip codex probe (binary missing)"
-  (( deepseek_ok )) && probe "deepseek" "deepseek -p 'say hello in 5 words' --yolo 2>&1 || deepseek 'say hello in 5 words' 2>&1" \
+  (( deepseek_ok )) && probe "deepseek" "deepseek -p 'say hello in 5 words' 2>&1 || deepseek 'say hello in 5 words' 2>&1" \
                    || note "skip deepseek probe (binary missing)"
   (( opus_ok ))     && probe "opus"     "$OPUS_BIN -p 'say hello in 5 words' 2>&1" \
                    || note "skip opus probe (binary missing)"

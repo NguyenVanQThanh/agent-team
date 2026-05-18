@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rock Paper Scissors</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #fafafa;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #111;
+    }
+
+    .rps-container {
+      display: grid;
+      gap: 12px;
+      justify-items: center;
+    }
+
+    .rps-status {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .rps-choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .rps-choice {
+      border: 1px solid #222;
+      background: #fff;
+      color: #111;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 4px;
+    }
+
+    .rps-choice:hover {
+      background: #eee;
+    }
+
+    .rps-choice:active {
+      background: #ddd;
+    }
+
+    .rps-scoreboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .rps-round {
+      display: grid;
+      gap: 4px;
+      justify-items: center;
+    }
+
+    .rps-restart {
+      border: 1px solid #222;
+      background: #f5f5f5;
+      color: #111;
+      cursor: pointer;
+      font: inherit;
+      padding: 8px 14px;
+      border-radius: 4px;
+    }
+
+    .rps-restart:hover {
+      background: #e5e5e5;
+    }
+
+    .rps-restart:active {
+      background: #d5d5d5;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+    const CHOICES = ["rock", "paper", "scissors"];
+
+    const WINNING_MATCHUPS = {
+      rock: "scissors",
+      paper: "rock",
+      scissors: "paper",
+    };
+
+    const INITIAL_SCORES = {
+      player: 0,
+      computer: 0,
+      draws: 0,
+    };
+
+    function getChoiceLabel(choice) {
+      return choice.charAt(0).toUpperCase() + choice.slice(1);
+    }
+
+    function getComputerChoice() {
+      return CHOICES[Math.floor(Math.random() * CHOICES.length)];
+    }
+
+    function getRoundResult(playerChoice, computerChoice) {
+      if (playerChoice === computerChoice) {
+        return "Draw";
+      }
+      return WINNING_MATCHUPS[playerChoice] === computerChoice
+        ? "You win"
+        : "Computer wins";
+    }
+
+    function RockPaperScissors() {
+      const [scores, setScores] = useState(INITIAL_SCORES);
+      const [lastRound, setLastRound] = useState(null);
+
+      function handleChoice(playerChoice) {
+        const computerChoice = getComputerChoice();
+        const result = getRoundResult(playerChoice, computerChoice);
+
+        setLastRound({
+          playerChoice,
+          computerChoice,
+          result,
+        });
+
+        setScores((currentScores) => {
+          if (result === "Draw") {
+            return {
+              ...currentScores,
+              draws: currentScores.draws + 1,
+            };
+          }
+
+          if (result === "You win") {
+            return {
+              ...currentScores,
+              player: currentScores.player + 1,
+            };
+          }
+
+          return {
+            ...currentScores,
+            computer: currentScores.computer + 1,
+          };
+        });
+      }
+
+      function restartGame() {
+        setScores(INITIAL_SCORES);
+        setLastRound(null);
+      }
+
+      return (
+        <section className="rps-container" aria-label="Rock Paper Scissors">
+          <div className="rps-status" aria-live="polite">
+            {lastRound ? lastRound.result : "Choose your play"}
+          </div>
+
+          <div className="rps-choices" aria-label="Player choices">
+            {CHOICES.map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                className="rps-choice"
+                onClick={() => handleChoice(choice)}
+              >
+                {getChoiceLabel(choice)}
+              </button>
+            ))}
+          </div>
+
+          <div className="rps-scoreboard" aria-live="polite">
+            <div>Player: {scores.player}</div>
+            <div>Computer: {scores.computer}</div>
+            <div>Draws: {scores.draws}</div>
+          </div>
+
+          {lastRound ? (
+            <div className="rps-round" aria-live="polite">
+              <div>You picked: {getChoiceLabel(lastRound.playerChoice)}</div>
+              <div>Computer picked: {getChoiceLabel(lastRound.computerChoice)}</div>
+            </div>
+          ) : null}
+
+          <button type="button" className="rps-restart" onClick={restartGame}>
+            Restart
+          </button>
+        </section>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<RockPaperScissors />);
+  </script>
+</body>
+</html>

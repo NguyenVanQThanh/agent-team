@@ -7,6 +7,9 @@
 # DEV_NAME in the environment. Defaults to "unknown".
 
 set -uo pipefail
+# Unset *_FLAGS before sourcing env.sh so parent-shell exports can't override
+# the project defaults (prevents BL-01-style leaks of stale flags like --yolo).
+unset CODEX_FLAGS DEEPSEEK_FLAGS OPUS_FLAGS OPUS_BIN 2>/dev/null || true
 # Source local env (OPUS_BIN, *_FLAGS, etc.) if present.
 _env_file="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )/env.sh"
 [[ -f "$_env_file" ]] && source "$_env_file"
