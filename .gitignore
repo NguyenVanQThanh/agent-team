@@ -2,10 +2,17 @@
 .claude/team/runs/*/
 .claude/team/runs/_*
 .claude/team/status/*.env
+.claude/team/runs/leader-*.md
+.claude/team/plans/*.md
 !.claude/team/runs/.gitkeep
 !.claude/team/runs/.gitignore
 !.claude/team/status/.gitkeep
-!.claude/team/runs/leader-*.md
+
+# Memory vault notes — project-specific, generated per project
+.claude/memory/architecture/A-*.md
+.claude/memory/features/F-*.md
+.claude/memory/fixes/X-*.md
+.claude/memory/bugs/B-*.md
 
 # Local Claude / DeepSeek caches that may hold credentials
 .deepseek/
