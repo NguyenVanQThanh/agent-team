@@ -9,16 +9,24 @@
 
 ## You are running as a teammate
 
-This repository is operated by a 1-leader + 5-dev agent team. You are one of
+This repository is operated by a 1-leader + 13-dev agent team. You are one of
 the dev teammates. The team layout:
 
-| Dev   | CLI binary  | Sizes  | Strengths                              |
-|-------|-------------|--------|----------------------------------------|
-| dev1  | `codex`     | M, L   | Coding, smoke tests, refactor          |
-| dev2  | `codex`     | M, L   | Module/service planner, archi notes    |
-| dev3  | `deepseek`  | M      | Smoke tests, refactor                  |
-| dev4  | `deepseek`  | M      | Coding (well-scoped)                   |
-| dev5  | `opus`      | L, XL  | Senior all-rounder                     |
+| Dev   | CLI binary    | Sizes  | Phase | Reasoning | Strengths                                       |
+|-------|---------------|--------|-------|-----------|-------------------------------------------------|
+| dev1  | `codex`       | M, L   | main  | medium    | Coding, smoke tests, refactor (workhorse)       |
+| dev2  | `codex`       | M, L   | main  | high      | Module/service planner, architecture notes      |
+| dev3  | `deepseek`    | S, M   | main  | n/a       | Quick smoke tests, small refactors              |
+| dev4  | `deepseek`    | S, M   | main  | n/a       | Coding (well-scoped small changes)              |
+| dev5  | `opus`        | XL     | main  | n/a       | Senior all-rounder; tournament partner w/ dev13 |
+| dev6  | `claude`      | M      | main  | n/a       | Haiku — fast coder for simple tasks             |
+| dev7  | `claude`      | M      | main  | n/a       | Haiku — smoke tester, quick verification        |
+| dev8  | `claude`      | L      | main  | n/a       | Sonnet — quality implementer, multi-file        |
+| dev9  | `claude`      | L      | main  | n/a       | Sonnet — reviewer, cross-module integrator      |
+| dev10 | `deepseek`    | M      | post  | n/a       | Memory scribe — writes bugs/, fixes/ post-run   |
+| dev11 | `gemini`      | M      | pre   | n/a       | Researcher — external info before main batch    |
+| dev12 | `codex`       | S, M   | main  | low       | Smoke tester / lint / quick verify (fast)       |
+| dev13 | `codex`       | L, XL  | main  | xhigh     | Senior coder + tournament partner with dev5     |
 
 The leader (a Claude Opus agent) decides which dev role to give you. **Your
 persona for this invocation is in the prompt you received** — it starts with
@@ -95,18 +103,21 @@ Only certain personas may write to `.claude/memory/`:
 
 - **dev2** → may write to `architecture/`.
 - **dev5** → may write to `architecture/`, `fixes/`, `bugs/`.
-- **dev1, dev3, dev4** → READ-ONLY. If you discover something worth recording,
-  mention it in `notes=` so the leader can dispatch dev5 to capture it.
+- **dev10** → may write to `bugs/`, `fixes/`, `features/` (post-phase synthesis).
+- **All other devs (dev1, dev3, dev4, dev6–9, dev11–13)** → READ-ONLY. If you
+  discover something worth recording, mention it in `notes=` so dev10 (or
+  dev5/dev2 for architecture decisions) can capture it.
 - Templates live in `.claude/memory/_templates/`. Use them.
 
 ## Project rules
 
 - **Never read `.env*` files** (or any secret file). See `CLAUDE.md` for the
   full deny list. Allowed: `.env.example`, `.env.sample`, `.env.template`.
-- **Stay in your size bracket.** Refuse work outside it. dev3 and dev4 only
-  do M-sized tasks; dev1/dev2 do M and L; dev5 does L and XL. If a task is
-  out of your bracket, write `status=blocked`, `notes=out-of-bracket, escalate
-  to dev5` (or as your persona says).
+- **Stay in your size bracket.** Your persona names the sizes you accept.
+  Refuse anything outside it: write `status=blocked`, `notes=out-of-bracket,
+  route to <appropriate-dev>`. Routing cheatsheet:
+  S → dev3/dev4/dev12 · M → dev1/dev3/dev4/dev6/dev7/dev12 ·
+  L → dev1/dev2/dev8/dev9/dev13 · XL → dev5 or dev13 (or both in tournament).
 - **Don't expand scope.** If your task is a refactor and you find a bug,
   mention it in `notes=` — the leader will file a follow-up. Don't fix it
   yourself.
@@ -133,6 +144,22 @@ Only certain personas may write to `.claude/memory/`:
     │   └── plans/              dev2 + dev5 drop design docs here
     └── memory/                 Obsidian vault — see write access above
 ```
+
+## Companion context files
+
+- `CLAUDE.md` — project-wide rules (you should read this too).
+- `GEMINI.md` — only relevant if you are dev11 (Gemini CLI). Gemini auto-loads
+  it; other CLIs can ignore it.
+
+## Tournament mode (relevant to dev5 and dev13)
+
+If your prompt contains a "TOURNAMENT MODE" block, you and another dev are
+solving the **same task** in parallel, each in your own git worktree under
+`.claude/team/worktrees/<task_id>-<dev>/`. Edit only inside your worktree path,
+commit your work (`git add . && git commit -m '...'`), and write your status
+file to the **absolute path** the prompt gives you (in the main repo's
+`.claude/team/status/<dev>.env`). Do not read the other dev's worktree during
+the run — independent attempts are the whole point.
 
 ## When you get confused
 

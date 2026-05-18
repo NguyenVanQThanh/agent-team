@@ -12,6 +12,10 @@
 .claude/.cache/
 .claude/projects/
 
+# User preferences — personal, never commit
+.claude/memory/user-prefs/*
+!.claude/memory/user-prefs/.gitkeep
+
 # Standard
 .env
 .env.local

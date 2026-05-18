@@ -27,30 +27,39 @@ project.
 
 ## Agent team
 
-This repo is configured with a 1-leader + 5-dev agent team. **The leader is a
-Claude subagent; the 5 devs are external agentic CLIs** (Codex / DeepSeek /
-Opus), each spawned as a real background process. They communicate with the
-leader and each other via shared files:
+This repo is configured with a 1-leader + 13-dev agent team. **The leader is a
+Claude subagent; the 13 devs are external agentic CLIs** (Codex / DeepSeek /
+Claude Haiku / Claude Sonnet / Claude Opus / Gemini), each spawned as a real
+background process. They communicate via shared files:
 
 - `.claude/team/tasks.md` — shared task list (per run; leader writes).
 - `.claude/team/status/<dev>.env` — per-dev status protocol (each CLI writes its own).
+- `.claude/team/research/<task-id>-findings.md` — dev11 research output (pre-phase).
 - `.claude/memory/` — durable Obsidian-style knowledge vault.
+- `.claude/memory/user-prefs/` — personal user preferences (gitignored).
 - `.claude/team/runs/<run-id>/` — per-CLI invocation logs (meta.env + output.log).
 
 Definitions:
 - Leader subagent prompt: `.claude/agents/leader.md` (model: opus).
-- Dev persona prompts:    `.claude/team/personas/dev{1..5}.md` (consumed by the
-  CLIs, NOT loaded as Claude subagents).
+- Dev persona prompts: `.claude/team/personas/dev{1..11}.md`.
 
 Roster:
 
-| Dev   | External CLI       | Sizes  | Strengths                              |
-|-------|--------------------|--------|----------------------------------------|
-| dev1  | Codex CLI          | M, L   | Coding, smoke tests, refactor          |
-| dev2  | Codex CLI          | M, L   | Module/service planner, archi notes    |
-| dev3  | DeepSeek CLI       | M      | Smoke tests, refactor                  |
-| dev4  | DeepSeek CLI       | M      | Coding                                 |
-| dev5  | Opus CLI           | L, XL  | Senior all-rounder, archi/fix/bug notes|
+| Dev   | CLI          | Sizes   | Phase  | Reasoning | Strengths                                          |
+|-------|--------------|---------|--------|-----------|----------------------------------------------------|
+| dev1  | Codex        | M, L    | main   | medium    | Coding, smoke tests, refactor (default workhorse)  |
+| dev2  | Codex        | M, L    | main   | high      | Module planner, architecture notes                |
+| dev3  | DeepSeek     | S, M    | main   | n/a       | Quick smoke tests, small refactors                |
+| dev4  | DeepSeek     | S, M    | main   | n/a       | Coding small well-scoped changes                  |
+| dev5  | Claude Opus  | XL      | main   | n/a       | Senior: hard bugs, arch rewrites (costly)         |
+| dev6  | Claude Haiku | M       | main   | n/a       | Fast coder, simple tasks                          |
+| dev7  | Claude Haiku | M       | main   | n/a       | Smoke tester, quick verification                  |
+| dev8  | Claude Sonnet| L       | main   | n/a       | Quality implementer, multi-file features          |
+| dev9  | Claude Sonnet| L       | main   | n/a       | Reviewer, integrator, cross-module checks         |
+| dev10 | DeepSeek     | M       | post   | n/a       | Memory scribe — writes bugs/fixes vault           |
+| dev11 | Gemini CLI   | M       | pre    | n/a       | Researcher — external info before main batch      |
+| dev12 | Codex        | S, M    | main   | low       | Smoke tester / lint / quick verify (fast, cheap)  |
+| dev13 | Codex        | L, XL   | main   | xhigh     | Senior coder + tournament partner with dev5       |
 
 ### Spawning the team
 
@@ -90,6 +99,33 @@ Override binaries via env: `CODEX_FLAGS`, `DEEPSEEK_FLAGS`, `OPUS_BIN`,
 
 `.claude/bin/team-tui.sh` opens an fzf-based dashboard with three views:
 [P] Processes (live CLI runs), [M] Memory (vault notes), [L] Leader runs.
+
+### Tournament mode (XL ensemble)
+
+For high-stakes XL tasks the leader can spawn **dev5 + dev13 on the same
+task_id**. `spawn-team.sh` detects this and creates a git worktree per dev under
+`.claude/team/worktrees/<task_id>-<dev>/` (each on branch
+`tournament/<task_id>/<dev>`). After the run the leader picks a winner with:
+
+```
+.claude/bin/prune-worktrees.sh <task_id> <winning-dev>    # squash-merge + cleanup
+.claude/bin/prune-worktrees.sh <task_id> --abort          # drop both, no merge
+```
+
+See `.claude/agents/leader.md` for when to use tournament vs solo dev5/dev13.
+
+### Per-dev Codex reasoning levels
+
+The four Codex devs use different `model_reasoning_effort` levels (configured
+in `.claude/bin/env.sh` as `CODEX_FLAGS_DEV{1,2,12,13}`):
+
+- dev12 → `low`     (smoke tests, lint, quick verify)
+- dev1  → `medium`  (general M/L coding — default)
+- dev2  → `high`    (planning, architecture sketches)
+- dev13 → `xhigh`   (XL, hard bugs, tournament partner)
+
+`_runner.sh` picks `CODEX_FLAGS_<DEV>` over `CODEX_FLAGS` automatically when a
+`--dev=` tag is passed.
 
 ## Obsidian memory vault
 

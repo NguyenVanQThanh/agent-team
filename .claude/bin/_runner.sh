@@ -9,7 +9,10 @@
 set -uo pipefail
 # Unset *_FLAGS before sourcing env.sh so parent-shell exports can't override
 # the project defaults (prevents BL-01-style leaks of stale flags like --yolo).
-unset CODEX_FLAGS DEEPSEEK_FLAGS OPUS_FLAGS OPUS_BIN 2>/dev/null || true
+unset CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13 \
+      DEEPSEEK_FLAGS OPUS_FLAGS OPUS_BIN \
+      HAIKU_FLAGS HAIKU_BIN SONNET_FLAGS SONNET_BIN \
+      GEMINI_FLAGS GEMINI_BIN 2>/dev/null || true
 # Source local env (OPUS_BIN, *_FLAGS, etc.) if present.
 _env_file="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )/env.sh"
 [[ -f "$_env_file" ]] && source "$_env_file"
@@ -51,6 +54,17 @@ runner_exec() {
     return 2
   fi
 
+  # Per-dev flags override: e.g. CODEX_FLAGS_DEV1 wins over CODEX_FLAGS.
+  # Lets us run dev1 at medium reasoning and dev2 at high with the same wrapper.
+  if [[ "$dev" != "unknown" ]]; then
+    local dev_upper
+    dev_upper="$(printf '%s' "$dev" | tr '[:lower:]' '[:upper:]')"
+    local per_dev_var="${flags_var}_${dev_upper}"
+    if [[ -n "${!per_dev_var:-}" ]]; then
+      flags_var="$per_dev_var"
+    fi
+  fi
+
   local first_word="${bin_spec%% *}"
   if ! command -v "$first_word" >/dev/null 2>&1; then
     echo "error: '$first_word' (from bin='$bin_spec') not on PATH" >&2
@@ -79,12 +93,13 @@ runner_exec() {
     echo "pid=$$"
     echo "started_at=$(date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S')"
     echo "status=running"
+    echo "flags_var=$flags_var"
     printf 'prompt=%q\n' "$prompt"
   } > "$_RUNNER_META"
 
   trap _runner_cleanup EXIT
 
-  echo "[runner] run_id=$run_id  dev=$dev  cli=$cli_name  log=$output" >&2
+  echo "[runner] run_id=$run_id  dev=$dev  cli=$cli_name  flags_var=$flags_var  log=$output" >&2
 
   local flags="${!flags_var:-}"
 
