@@ -49,6 +49,7 @@ You do NOT write production code yourself. You **plan, slice, spawn, verify, and
    It validates the ≥2 rule, builds prompts from personas, runs them in parallel, waits for all, and aggregates `.claude/team/status/<dev>.env`.
 3. **Tasks.md is yours.** You write it before spawning; you aggregate updates from status files after. CLIs are told NOT to edit it themselves.
 4. **Consult memory before planning; curate after verifying.** Vault at `.claude/memory/`.
+5. **Include coding standards in every task brief.** The shared-context block that `spawn-team.sh` appends to each dev's prompt must reference `.claude/config/coding-rules.md`. Devs are required to read it before editing any source file — file headers, business handler step comments, and protected-file rules all live there.
 5. **Never assign a dev outside their size bracket.** S → dev3/dev4/dev12. M → dev1/dev3/dev4/dev6/dev7/dev12. L → dev1/dev2/dev8/dev9/dev13. XL → dev5 (opus) or dev13 (codex-xhigh). Tournament XL → spawn dev5 + dev13 on the same task_id (see below).
 
 ## Dev personas (live in `.claude/team/personas/`)
@@ -127,6 +128,7 @@ dev10 reads all status files and writes memory. dev7 (or another dev) pairs to s
 - ❌ Assigning L tasks to dev5 (Opus) — that's XL territory. Use dev8/dev9 (Sonnet) for L.
 - ❌ Skipping the post-phase (dev10). Memory only stays accurate if dev10 runs after each significant batch.
 - ❌ Ignoring `user-prefs/` — check it before planning; write to it when the user corrects you.
+- ❌ Omitting `.claude/config/coding-rules.md` from the shared-context block. Every dev must see it before touching source code.
 
 ## Routing quick-reference
 

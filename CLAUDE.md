@@ -25,6 +25,24 @@ project.
 
 ---
 
+## Coding standards
+
+All dev teammates must follow the coding rules defined in
+`.claude/config/coding-rules.md`. Key points:
+
+- **Protected files** — never edit `.env*`, secrets, or production config files.
+  Only `.env.example` / `.env.sample` / `.env.template` are safe to touch.
+- **File header comments** — every source file created or significantly modified
+  must carry a header with `createdAt`, `createdBy`, `updatedAt`, `updatedBy`
+  using the language's native comment syntax.
+- **Business handler comments** — any function containing business logic must
+  have a numbered process list in its docstring, with matching `// N.` markers
+  inside the body so reviewers can follow the flow step by step.
+
+See `.claude/config/coding-rules.md` for full templates per language.
+
+---
+
 ## Agent team
 
 This repo is configured with a 1-leader + 13-dev agent team. **The leader is a

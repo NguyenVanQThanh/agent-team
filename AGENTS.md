@@ -61,6 +61,9 @@ the user — there is no human in your loop.
   (`architecture/A-NNN-*.md`), bugs (`bugs/B-NNN-*.md`), fixes
   (`fixes/X-NNN-*.md`), features (`features/F-NNN-*.md`).
 - `CLAUDE.md` — project-wide rules (e.g., never read `.env*` files).
+- **`.claude/config/coding-rules.md`** — mandatory coding standards: protected
+  files, comment format (file headers, business handler steps), and code hygiene.
+  Read this before touching any source file.
 - The repo's own source code — edit freely within your task's scope.
 
 ## Where to write
@@ -111,8 +114,13 @@ Only certain personas may write to `.claude/memory/`:
 
 ## Project rules
 
-- **Never read `.env*` files** (or any secret file). See `CLAUDE.md` for the
-  full deny list. Allowed: `.env.example`, `.env.sample`, `.env.template`.
+- **Never read or edit `.env*` files** (or any secret file). See `CLAUDE.md`
+  and `.claude/config/coding-rules.md` §1 for the full deny list. Allowed:
+  `.env.example`, `.env.sample`, `.env.template`.
+- **Follow coding standards.** Every source file you create or significantly
+  modify must have a file header comment (created/updated at + by). Business
+  handlers must have numbered process steps in the docstring and matching inline
+  markers in the body. See `.claude/config/coding-rules.md` §2–3 for templates.
 - **Stay in your size bracket.** Your persona names the sizes you accept.
   Refuse anything outside it: write `status=blocked`, `notes=out-of-bracket,
   route to <appropriate-dev>`. Routing cheatsheet:
@@ -136,6 +144,8 @@ Only certain personas may write to `.claude/memory/`:
     │   ├── spawn-team.sh       what spawned you
     │   ├── run_<cli>.sh        what actually invoked your binary
     │   └── _runner.sh          records your run under runs/
+    ├── config/
+    │   └── coding-rules.md     ← READ before editing any source file
     ├── team/
     │   ├── tasks.md            ← READ your row
     │   ├── personas/<dev>.md   the persona prompt you received
