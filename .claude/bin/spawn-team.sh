@@ -33,29 +33,244 @@ set -uo pipefail
 _env_file="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )/env.sh"
 [[ -f "$_env_file" ]] && source "$_env_file"
 
-# -------- pre-flight --------
-
-if [[ $# -lt 2 ]]; then
-  cat >&2 <<USAGE
-usage: $0 <dev>:<cli>:<task_id> <dev>:<cli>:<task_id> [more...]
-
-Examples:
-  $0 dev1:codex:T-001 dev3:deepseek:T-002
-  $0 dev2:codex:T-005 dev5:opus:T-006 dev4:deepseek:T-007
-  $0 dev5:opus:T-100 dev13:codex:T-100  # tournament on T-100
-
-Hard rule: at least 2 specs required (>= 2 devs per run).
-USAGE
-  exit 2
-fi
-
 SCRIPT_DIR="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )"
 REPO="$( cd -- "$SCRIPT_DIR/../.." &>/dev/null && pwd )"
 PERSONA_DIR="$REPO/.claude/team/personas"
 STATUS_DIR="$REPO/.claude/team/status"
 TASKS_FILE="$REPO/.claude/team/tasks.md"
 WORKTREES_DIR="$REPO/.claude/team/worktrees"
-mkdir -p "$STATUS_DIR" "$WORKTREES_DIR"
+QUEUE_DIR="$REPO/.claude/team/queue"
+PLANS_DIR="$REPO/.claude/team/plans"
+mkdir -p "$STATUS_DIR" "$WORKTREES_DIR" "$QUEUE_DIR/pending" "$QUEUE_DIR/claimed" "$QUEUE_DIR/done" "$QUEUE_DIR/failed"
+
+# -------- new-flag parsing (pool mode + plan ingestion) --------
+# Both flags can appear before positional specs. They short-circuit into
+# alternative flows; legacy pinned mode is untouched if neither is used.
+
+POOL_MODE=0
+FROM_PLAN=""
+declare -a POOL_DEVS=()       # specs like "devN:cli" (no task_id in pool mode)
+declare -a PINNED_SPECS=()    # passthrough to legacy logic below
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --pool)
+      POOL_MODE=1; shift ;;
+    --from-plan)
+      FROM_PLAN="${2:-}"; shift 2 ;;
+    --from-plan=*)
+      FROM_PLAN="${1#--from-plan=}"; shift ;;
+    -h|--help)
+      cat >&2 <<USAGE
+usage:
+  # pinned mode (legacy, leader pre-assigns task_id):
+  $0 <dev>:<cli>:<task_id> <dev>:<cli>:<task_id> [more...]
+
+  # pool mode (devs pull from .claude/team/queue/pending/):
+  $0 --pool <dev>:<cli> <dev>:<cli> [more...]
+
+  # plan-document mode (leader gives a plan.md, spawn parses tasks into queue):
+  $0 --from-plan .claude/team/plans/<id>.md --pool <dev>:<cli> [more...]
+  $0 --from-plan .claude/team/plans/<id>.md <dev>:<cli>:<task_id> [more...]
+
+Hard rule (all modes): >= 2 distinct devs per run.
+USAGE
+      exit 0 ;;
+    *)
+      # Distinguish pool spec (dev:cli) vs pinned spec (dev:cli:task_id) by
+      # the number of colons.
+      if [[ "$1" == *:*:* ]]; then
+        PINNED_SPECS+=("$1")
+      elif [[ "$1" == *:* ]]; then
+        POOL_DEVS+=("$1")
+      else
+        echo "error: unrecognised arg '$1'" >&2; exit 2
+      fi
+      shift ;;
+  esac
+done
+
+# If --from-plan given: parse plan and write task files into queue/pending/.
+plan_parse() {
+  # Args: <plan-file>
+  # Looks for a markdown table whose header row contains "id" and "size".
+  # Each subsequent row becomes one queue/pending/T-XXX.task file.
+  # Columns recognised (case-insensitive): id, size, summary, files,
+  # acceptance, depends_on. Unknown columns are ignored.
+  local plan="$1"
+  [[ -f "$plan" ]] || { echo "error: plan file not found: $plan" >&2; return 2; }
+  python3 - "$plan" "$QUEUE_DIR/pending" <<'PY'
+import re, sys, os, datetime
+plan_path = sys.argv[1]
+pending = sys.argv[2]
+text = open(plan_path, encoding='utf-8').read()
+# find first table that has an "id" header column
+tables = re.findall(r'(\|[^\n]*\|\n\|[ \-:|]+\|\n(?:\|[^\n]*\|\n?)+)', text)
+hdr_idx = None
+for tbl in tables:
+    first_line = tbl.splitlines()[0]
+    cols = [c.strip().lower() for c in first_line.strip().strip('|').split('|')]
+    if 'id' in cols and 'size' in cols:
+        hdr = cols
+        rows = []
+        for line in tbl.splitlines()[2:]:
+            if not line.strip(): continue
+            cells = [c.strip() for c in line.strip().strip('|').split('|')]
+            if len(cells) != len(hdr): continue
+            rows.append(dict(zip(hdr, cells)))
+        ts = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        n = 0
+        for r in rows:
+            tid = r.get('id','').strip()
+            if not tid: continue
+            outp = os.path.join(pending, f'{tid}.task')
+            with open(outp, 'w', encoding='utf-8') as f:
+                f.write(f'id={tid}\n')
+                f.write(f'size={r.get("size","M")}\n')
+                f.write(f'summary={r.get("summary","")}\n')
+                f.write(f'files={r.get("files","")}\n')
+                f.write(f'acceptance={r.get("acceptance","")}\n')
+                f.write(f'depends_on={r.get("depends_on","")}\n')
+                f.write(f'created_at={ts}\n')
+                f.write(f'source_plan={os.path.relpath(plan_path)}\n')
+            n += 1
+        print(f'wrote {n} task files into {pending} from {plan_path}', file=sys.stderr)
+        sys.exit(0)
+print('error: no table with id+size columns in plan', file=sys.stderr)
+sys.exit(2)
+PY
+}
+
+if [[ -n "$FROM_PLAN" ]]; then
+  plan_parse "$FROM_PLAN" || exit $?
+fi
+
+# -------- pool mode dispatch --------
+if (( POOL_MODE == 1 )); then
+  # Validate >= 2 distinct devs
+  declare -A pool_seen=()
+  for spec in "${POOL_DEVS[@]:-}"; do
+    [[ -z "$spec" ]] && continue
+    IFS=':' read -r dev cli <<< "$spec"
+    if [[ -z "$dev" || -z "$cli" ]]; then
+      echo "error: malformed pool spec '$spec' (need dev:cli)" >&2; exit 2
+    fi
+    if [[ ! -f "$PERSONA_DIR/$dev.md" ]]; then
+      echo "error: no persona for '$dev'" >&2; exit 2
+    fi
+    if [[ ! -x "$SCRIPT_DIR/run_${cli}.sh" ]]; then
+      echo "error: no runner for cli '$cli'" >&2; exit 2
+    fi
+    pool_seen[$dev]=1
+  done
+  if (( ${#pool_seen[@]} < 2 )); then
+    echo "error: --pool needs >= 2 distinct devs (got ${#pool_seen[@]})" >&2
+    exit 2
+  fi
+
+  # Verify queue has work.
+  shopt -s nullglob
+  q=( "$QUEUE_DIR/pending"/*.task )
+  shopt -u nullglob
+  if (( ${#q[@]} == 0 )); then
+    echo "error: queue/pending/ is empty — nothing for pool to claim" >&2
+    exit 2
+  fi
+
+  echo "pool mode: ${#pool_seen[@]} devs, ${#q[@]} pending tasks"
+  declare -a pool_pids=() pool_labels=()
+  for spec in "${POOL_DEVS[@]}"; do
+    IFS=':' read -r dev cli <<< "$spec"
+    rm -f "$STATUS_DIR/$dev.env" 2>/dev/null || true
+    (
+      while true; do
+        tf=$("$SCRIPT_DIR/claim-task.sh" "$dev" 2>/dev/null) || break
+        [[ -z "$tf" ]] && break
+        tid=$(grep -E "^id=" "$tf" | head -1 | cut -d= -f2- | tr -d "\r")
+        persona=$(cat "$PERSONA_DIR/$dev.md")
+        prompt=$(cat <<PROMPT
+$persona
+
+----
+
+## Pool mode
+
+You are running in **pool mode**. The runner has already claimed task **$tid**
+for you. The full spec is appended below by the runner.
+
+When finished, the runner trailer will call complete-task.sh for you with
+the exit code. If your CLI exits 0 the task is recorded as done; otherwise
+failed. If you need to mark it specifically, run:
+  .claude/bin/complete-task.sh $dev $tid done|failed "<notes>"
+before exiting.
+
+DO NOT edit .claude/team/tasks.md (the leader aggregates).
+Read shared context: CLAUDE.md, .claude/config/coding-rules.md, .claude/memory/.
+
+Begin.
+PROMPT
+)
+        if ( cd "$REPO" && "$SCRIPT_DIR/run_${cli}.sh" --dev="$dev" --task-file="$tf" "$prompt" >/dev/null 2>&1 ); then
+          # If the dev did not write the final state itself, do it now.
+          [[ -f "$QUEUE_DIR/claimed/${tid}.task" ]] && \
+            "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" done "auto-finalised by spawn-team" >/dev/null
+        else
+          [[ -f "$QUEUE_DIR/claimed/${tid}.task" ]] && \
+            "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" failed "runner exit non-zero" >/dev/null
+        fi
+      done
+    ) &
+    pid=$!
+    pool_pids+=("$pid"); pool_labels+=("$dev:$cli (pid $pid)")
+    echo "pool worker $dev ($cli) started, pid $pid"
+  done
+
+  echo ""
+  echo "waiting for ${#pool_pids[@]} pool worker(s) to drain the queue..."
+  for i in "${!pool_pids[@]}"; do
+    wait "${pool_pids[$i]}" || true
+  done
+
+  echo ""
+  echo "============= pool run summary ============="
+  for st in done failed; do
+    shopt -s nullglob
+    files=( "$QUEUE_DIR/$st"/*.task )
+    shopt -u nullglob
+    echo "$st: ${#files[@]} task(s)"
+    for f in "${files[@]}"; do
+      tid=$(grep -E "^id=" "$f" | head -1 | cut -d= -f2-)
+      by=$(grep -E "^claimed_by=" "$f" | head -1 | cut -d= -f2-)
+      echo "  - $tid (claimed_by=$by)"
+    done
+  done
+  echo "============================================"
+  exit 0
+fi
+
+# -------- legacy pinned mode --------
+# Replace positional args with the collected pinned specs so the rest of
+# the original script works unchanged.
+set -- "${PINNED_SPECS[@]:-}"
+
+# -------- pre-flight (pinned mode) --------
+
+if [[ $# -lt 2 || -z "${1:-}" ]]; then
+  cat >&2 <<USAGE
+usage: $0 <dev>:<cli>:<task_id> <dev>:<cli>:<task_id> [more...]
+       $0 --pool <dev>:<cli> <dev>:<cli> [more...]
+       $0 --from-plan PATH ...
+
+Examples:
+  $0 dev1:codex:T-001 dev3:deepseek:T-002
+  $0 dev2:codex:T-005 dev5:opus:T-006 dev4:deepseek:T-007
+  $0 dev5:opus:T-100 dev13:codex:T-100  # tournament on T-100
+  $0 --pool dev1:codex dev4:deepseek dev8:sonnet
+
+Hard rule: at least 2 specs required (>= 2 devs per run).
+USAGE
+  exit 2
+fi
 
 # Validate each spec, also count distinct devs and group by task.
 declare -A seen_devs

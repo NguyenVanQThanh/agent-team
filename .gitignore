@@ -29,3 +29,17 @@
 .env.*.local
 node_modules/
 *.log
+
+# Task queue — per-run artifacts (skeleton dirs + README only tracked)
+.claude/team/queue/pending/*
+.claude/team/queue/claimed/*
+.claude/team/queue/done/*
+.claude/team/queue/failed/*
+!.claude/team/queue/pending/.gitkeep
+!.claude/team/queue/claimed/.gitkeep
+!.claude/team/queue/done/.gitkeep
+!.claude/team/queue/failed/.gitkeep
+!.claude/team/queue/pending/.gitignore
+!.claude/team/queue/claimed/.gitignore
+!.claude/team/queue/done/.gitignore
+!.claude/team/queue/failed/.gitignore

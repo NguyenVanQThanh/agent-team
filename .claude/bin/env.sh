@@ -51,3 +51,17 @@ export OPUS_BIN OPUS_FLAGS
 export CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13
 export DEEPSEEK_FLAGS
 export HAIKU_BIN HAIKU_FLAGS SONNET_BIN SONNET_FLAGS GEMINI_BIN GEMINI_FLAGS
+
+# ---- Per-dev size brackets (used by claim-task.sh in pool mode) ----
+# Each dev only claims tasks whose size= matches one of its bracket sizes.
+# Mirrors the routing table in .claude/agents/leader.md — keep in sync.
+declare -A DEV_SIZES=(
+  [dev1]="M L"     [dev2]="M L"
+  [dev3]="S M"     [dev4]="S M"
+  [dev5]="XL"
+  [dev6]="M"       [dev7]="M"
+  [dev8]="L"       [dev9]="L"
+  [dev10]="M"      [dev11]="M"
+  [dev12]="S M"    [dev13]="L XL"
+)
+export DEV_SIZES

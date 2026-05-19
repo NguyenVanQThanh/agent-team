@@ -45,12 +45,19 @@ runner_exec() {
   local flags_var="$1"; shift
 
   local dev="${DEV_NAME:-unknown}"
-  if [[ "${1:-}" == --dev=* ]]; then
-    dev="${1#--dev=}"; shift
-  fi
+  local task_file=""
+  # Accept --dev= and --task-file= in any order (both optional, both before
+  # the positional prompt).
+  while [[ "${1:-}" == --* ]]; do
+    case "$1" in
+      --dev=*)        dev="${1#--dev=}"; shift ;;
+      --task-file=*)  task_file="${1#--task-file=}"; shift ;;
+      *) break ;;
+    esac
+  done
 
   if [[ $# -lt 1 ]]; then
-    echo "usage: run_${cli_name}.sh [--dev=devX] \"<prompt>\"" >&2
+    echo "usage: run_${cli_name}.sh [--dev=devX] [--task-file=PATH] \"<prompt>\"" >&2
     return 2
   fi
 
@@ -86,6 +93,16 @@ runner_exec() {
   local prompt
   prompt="$(printf '%s' "$1" | tr '\n' ' ' | cut -c1-200)"
 
+  # If a task file was provided, prepend a Task spec block to the prompt so
+  # the CLI sees the exact task it was claimed for (pool mode).
+  local task_spec_block=""
+  local task_id=""
+  if [[ -n "$task_file" && -f "$task_file" ]]; then
+    task_id=$(grep -E '^id=' "$task_file" | head -1 | cut -d= -f2- | tr -d '\r')
+    task_spec_block=$(printf '\n----\n\n## Your task this run (pool mode)\n\nYou were claimed for the task spec below. The full spec lives at:\n  %s\n\n```env\n%s\n```\n\nWhen finished, you (or your runner) MUST call:\n  .claude/bin/complete-task.sh %s %s done|failed "<notes>"\n\n----\n\n' \
+      "$task_file" "$(cat "$task_file")" "$dev" "$task_id")
+  fi
+
   {
     echo "run_id=$run_id"
     echo "dev=$dev"
@@ -94,6 +111,8 @@ runner_exec() {
     echo "started_at=$(date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S')"
     echo "status=running"
     echo "flags_var=$flags_var"
+    [[ -n "$task_file" ]] && echo "task_file=$task_file"
+    [[ -n "$task_id" ]]   && echo "task_id=$task_id"
     printf 'prompt=%q\n' "$prompt"
   } > "$_RUNNER_META"
 
@@ -102,9 +121,11 @@ runner_exec() {
   echo "[runner] run_id=$run_id  dev=$dev  cli=$cli_name  flags_var=$flags_var  log=$output" >&2
 
   local flags="${!flags_var:-}"
+  local full_prompt="${task_spec_block}${1}"
+  shift   # consume the original prompt positional
 
   # shellcheck disable=SC2086
-  $bin_spec $flags "$@" 2>&1 | tee "$output"
+  $bin_spec $flags "$full_prompt" "$@" 2>&1 | tee "$output"
   local ec=${PIPESTATUS[0]}
   return "$ec"
 }
