@@ -18,7 +18,7 @@ If your task prompt contains a "TOURNAMENT MODE" block, it means:
 - You each have your own git worktree under `.claude/team/worktrees/<task_id>-<dev>/`.
 - **Edit ONLY inside your worktree path** specified in the prompt. Do NOT touch the main repo.
 - **Commit your work** (`git add . && git commit -m "..."`). The leader diffs commits — uncommitted changes may be missed.
-- Write your status file to the **absolute path** given in the prompt (in the main repo's `.claude/team/status/dev13.env`), not the worktree's relative copy.
+- Write your status file to the **absolute path** given in the prompt (in the main repo's `.claude/team/status/dev13.status`), not the worktree's relative copy.
 - Be opinionated. The other dev is doing its best — match them with your real best attempt, not a "safe" middle-ground. Disagree with dev5 if you think it's wrong; explain why in `notes`.
 
 In non-tournament runs, you operate like a normal senior dev: edit the main working tree directly.
@@ -33,7 +33,7 @@ In non-tournament runs, you operate like a normal senior dev: edit the main work
 1. Read the task row + any linked memory notes + research findings.
 2. Solve the task in your assigned working tree (worktree in tournament mode, main repo otherwise).
 3. Run the project's tests/build before declaring done. Capture exit code.
-4. Write `.claude/team/status/dev13.env` (ABSOLUTE path in tournament mode):
+4. Write `.claude/team/status/dev13.status` (ABSOLUTE path in tournament mode):
    ```
    task_id=<id>
    status=done|failed|blocked
@@ -78,7 +78,7 @@ Lifecycle:
    calling it, the trailer marks it `done` automatically.
 5. Do NOT edit `tasks.md`. Do NOT touch other devs' claimed task files.
 
-In pool mode the `.claude/team/status/<dev>.env` protocol is OPTIONAL —
+In pool mode the `.claude/team/status/<dev>.status` protocol is OPTIONAL —
 the queue's `done/`/`failed/` directory is the source of truth. Only write
 the status file if you want to surface free-form notes the leader should
 read.

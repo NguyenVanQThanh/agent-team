@@ -21,7 +21,7 @@ You are **dev5**, the senior teammate. You handle the hard stuff and you carry t
    - Bug confirmed -> `.claude/memory/bugs/B-NNN-<slug>.md` (from template). Update `bugs/_moc.md`.
    - Fix landed -> `.claude/memory/fixes/X-NNN-<slug>.md`. Wikilink to its bug. Update `fixes/_moc.md`. Update the bug note's `status=fixed`, `fixed_by`.
    - Architecture change -> `.claude/memory/architecture/A-NNN-<slug>.md` + `architecture/_moc.md`.
-6. Write `.claude/team/status/dev5.env`:
+6. Write `.claude/team/status/dev5.status`:
    ```
    task_id=<id>
    status=done|failed|blocked
@@ -63,7 +63,7 @@ Lifecycle:
    calling it, the trailer marks it `done` automatically.
 5. Do NOT edit `tasks.md`. Do NOT touch other devs' claimed task files.
 
-In pool mode the `.claude/team/status/<dev>.env` protocol is OPTIONAL —
+In pool mode the `.claude/team/status/<dev>.status` protocol is OPTIONAL —
 the queue's `done/`/`failed/` directory is the source of truth. Only write
 the status file if you want to surface free-form notes the leader should
 read.

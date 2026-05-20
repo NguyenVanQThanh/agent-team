@@ -19,16 +19,84 @@ _env_file="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )/env
 # NOTE: deliberately NOT using `set -e` here because runner_exec needs to
 # capture the CLI's exit code from PIPESTATUS without aborting on failures.
 
-# Global so the EXIT trap (which runs after runner_exec returns) can see it.
+# Globals so the EXIT trap (which runs after runner_exec returns) can see them.
 _RUNNER_META=""
+_RUNNER_TASK_FILE=""
+_RUNNER_REPO=""
+_RUNNER_START_EPOCH=""
 
+# Completion validation: an `exit_code=0` from the CLI is NOT proof the task
+# was actually done. If a task file declares `files=` (comma-separated paths),
+# we verify at least one of those files was modified after the run started.
+# Without this, sub-CLIs that silently no-op (e.g. permission-walled, or
+# drifted to unrelated work) get recorded as `status=done` and poison the
+# leader's status aggregation (see B-001 2026-05-20).
+#
+# Resulting `status=` field semantics:
+#   done      — exit 0 AND (no files= declared OR all expected files modified)
+#   partial   — exit 0 AND some-but-not-all expected files modified
+#   degraded  — exit 0 BUT zero expected files modified (i.e. silent no-op)
+#   failed    — exit non-zero
 _runner_cleanup() {
   local ec=$?
   [[ -z "$_RUNNER_META" || ! -f "$_RUNNER_META" ]] && return
+
+  # Decide the headline status first based on exit code + file validation.
+  local status_word notes_runner=""
+  local files_expected=0 files_touched=0
+  local missing=""
+
+  if [[ -n "$_RUNNER_TASK_FILE" && -f "$_RUNNER_TASK_FILE" ]]; then
+    local files_line
+    files_line=$(grep -E '^files=' "$_RUNNER_TASK_FILE" | head -1 | cut -d= -f2- | tr -d '\r')
+    if [[ -n "$files_line" ]]; then
+      IFS=',' read -r -a expected_files <<< "$files_line"
+      for f in "${expected_files[@]}"; do
+        # trim whitespace
+        f="${f#"${f%%[![:space:]]*}"}"; f="${f%"${f##*[![:space:]]}"}"
+        [[ -z "$f" ]] && continue
+        files_expected=$((files_expected+1))
+        # resolve relative to repo
+        local abs="$f"
+        if [[ "$f" != /* && -n "$_RUNNER_REPO" ]]; then
+          abs="$_RUNNER_REPO/$f"
+        fi
+        local mt
+        mt=$(stat -c%Y "$abs" 2>/dev/null || stat -f%m "$abs" 2>/dev/null || echo "")
+        if [[ -n "$mt" && -n "$_RUNNER_START_EPOCH" && "$mt" -ge "$_RUNNER_START_EPOCH" ]]; then
+          files_touched=$((files_touched+1))
+        else
+          missing="${missing:+$missing,}$f"
+        fi
+      done
+    fi
+  fi
+
+  if (( ec != 0 )); then
+    status_word="failed"
+  elif (( files_expected == 0 )); then
+    # No files= declared (research/review task) — trust exit code.
+    status_word="done"
+  elif (( files_touched == files_expected )); then
+    status_word="done"
+  elif (( files_touched == 0 )); then
+    status_word="degraded"
+    notes_runner="exit 0 but ZERO expected files modified — likely silent no-op (permission wall, drift, or did-nothing)"
+  else
+    status_word="partial"
+    notes_runner="$files_touched of $files_expected expected files modified; missing: $missing"
+  fi
+
   {
     echo "ended_at=$(date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S')"
     echo "exit_code=$ec"
-    if [[ $ec -eq 0 ]]; then echo "status=done"; else echo "status=failed"; fi
+    echo "status=$status_word"
+    if (( files_expected > 0 )); then
+      echo "files_expected=$files_expected"
+      echo "files_touched=$files_touched"
+      [[ -n "$missing" ]] && echo "files_missing=$missing"
+    fi
+    [[ -n "$notes_runner" ]] && printf 'notes_runner=%q\n' "$notes_runner"
   } >> "$_RUNNER_META"
 }
 
@@ -103,12 +171,19 @@ runner_exec() {
       "$task_file" "$(cat "$task_file")" "$dev" "$task_id")
   fi
 
+  # Capture start epoch BEFORE invoking the CLI so completion validation
+  # (in _runner_cleanup) can compare against file mtimes.
+  _RUNNER_START_EPOCH="$(date +%s)"
+  _RUNNER_TASK_FILE="$task_file"
+  _RUNNER_REPO="$repo"
+
   {
     echo "run_id=$run_id"
     echo "dev=$dev"
     echo "cli=$cli_name"
     echo "pid=$$"
     echo "started_at=$(date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S')"
+    echo "started_epoch=$_RUNNER_START_EPOCH"
     echo "status=running"
     echo "flags_var=$flags_var"
     [[ -n "$task_file" ]] && echo "task_file=$task_file"

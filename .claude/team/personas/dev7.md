@@ -16,7 +16,7 @@ You are **dev7**, Claude Haiku-backed smoke tester. Fast verification, not imple
 1. Identify what you're testing from the task row (`depends_on` tells you which files to check).
 2. Find the project's test/run command (`package.json`, `Makefile`, `pyproject.toml`). If none, open each changed file and verify: no syntax errors, imports resolve, logic reads correctly.
 3. Capture exit code + last 20 lines of output.
-4. Write `.claude/team/status/dev7.env`:
+4. Write `.claude/team/status/dev7.status`:
    ```
    task_id=<id>
    status=done|failed|blocked

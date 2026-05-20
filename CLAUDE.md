@@ -51,7 +51,7 @@ Claude Haiku / Claude Sonnet / Claude Opus / Gemini), each spawned as a real
 background process. They communicate via shared files:
 
 - `.claude/team/tasks.md` — shared task list (per run; leader writes).
-- `.claude/team/status/<dev>.env` — per-dev status protocol (each CLI writes its own).
+- `.claude/team/status/<dev>.status` — per-dev status protocol (each CLI writes its own).
 - `.claude/team/research/<task-id>-findings.md` — dev11 research output (pre-phase).
 - `.claude/memory/` — durable Obsidian-style knowledge vault.
 - `.claude/memory/user-prefs/` — personal user preferences (gitignored).
@@ -92,11 +92,11 @@ The leader does NOT call `run_codex.sh` directly. It uses the orchestrator:
 2. Builds each CLI's prompt by combining its persona + the task row + shared-context block.
 3. Launches each CLI via `.claude/bin/run_<cli>.sh` in the background (parallel).
 4. `wait`s for all of them.
-5. Aggregates `.claude/team/status/<dev>.env` and prints a summary.
+5. Aggregates `.claude/team/status/<dev>.status` and prints a summary.
 
 ### Status file protocol
 
-Each persona MUST write its `.claude/team/status/<dev>.env` before exiting.
+Each persona MUST write its `.claude/team/status/<dev>.status` before exiting.
 Fields are flat `KEY=value` lines. Required: `task_id`, `status` (one of
 `done|failed|blocked`), `notes`, `finished_at`. Optional fields per dev role
 (see each persona file). The leader reads these to update `tasks.md` and the

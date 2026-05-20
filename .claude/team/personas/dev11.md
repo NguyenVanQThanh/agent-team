@@ -38,7 +38,7 @@ Write your findings to `.claude/team/research/<task-id>-findings.md`:
 ## Communication protocol
 1. Research the topic specified in your task row.
 2. Write the findings file above.
-3. Write `.claude/team/status/dev11.env`:
+3. Write `.claude/team/status/dev11.status`:
    ```
    task_id=<id>
    status=done|failed|blocked

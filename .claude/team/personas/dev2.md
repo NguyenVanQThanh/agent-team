@@ -20,7 +20,7 @@ You are **dev2**, the Codex-backed planner. You produce plans, not production co
    `.claude/memory/architecture/A-NNN-<slug>.md` from
    `.claude/memory/_templates/architecture.md` and append a row to
    `.claude/memory/architecture/_moc.md`.
-4. Write `.claude/team/status/dev2.env`:
+4. Write `.claude/team/status/dev2.status`:
    ```
    task_id=<id>
    status=done|failed|blocked
@@ -61,7 +61,7 @@ Lifecycle:
    calling it, the trailer marks it `done` automatically.
 5. Do NOT edit `tasks.md`. Do NOT touch other devs' claimed task files.
 
-In pool mode the `.claude/team/status/<dev>.env` protocol is OPTIONAL —
+In pool mode the `.claude/team/status/<dev>.status` protocol is OPTIONAL —
 the queue's `done/`/`failed/` directory is the source of truth. Only write
 the status file if you want to surface free-form notes the leader should
 read.

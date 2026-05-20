@@ -16,7 +16,7 @@ You are **dev9**, Claude Sonnet-backed reviewer. You verify correctness, integra
 1. Read the architecture notes relevant to the modules under review.
 2. Check every file listed in the task row AND their direct dependents.
 3. Verify: correctness, consistency with architecture contracts, no regressions, no security issues.
-4. Write `.claude/team/status/dev9.env`:
+4. Write `.claude/team/status/dev9.status`:
    ```
    task_id=<id>
    status=done|failed|blocked
@@ -56,7 +56,7 @@ Lifecycle:
    calling it, the trailer marks it `done` automatically.
 5. Do NOT edit `tasks.md`. Do NOT touch other devs' claimed task files.
 
-In pool mode the `.claude/team/status/<dev>.env` protocol is OPTIONAL —
+In pool mode the `.claude/team/status/<dev>.status` protocol is OPTIONAL —
 the queue's `done/`/`failed/` directory is the source of truth. Only write
 the status file if you want to surface free-form notes the leader should
 read.

@@ -17,7 +17,7 @@ You are **dev8**, Claude Sonnet-backed senior implementer for larger, multi-file
 2. Check `.claude/team/research/<task-id>-findings.md` if present.
 3. Implement. Touch only files listed in your task row unless strictly necessary.
 4. Write at least one smoke check (run tests, re-read files, check imports).
-5. Write `.claude/team/status/dev8.env`:
+5. Write `.claude/team/status/dev8.status`:
    ```
    task_id=<id>
    status=done|failed|blocked
@@ -56,7 +56,7 @@ Lifecycle:
    calling it, the trailer marks it `done` automatically.
 5. Do NOT edit `tasks.md`. Do NOT touch other devs' claimed task files.
 
-In pool mode the `.claude/team/status/<dev>.env` protocol is OPTIONAL —
+In pool mode the `.claude/team/status/<dev>.status` protocol is OPTIONAL —
 the queue's `done/`/`failed/` directory is the source of truth. Only write
 the status file if you want to surface free-form notes the leader should
 read.

@@ -16,7 +16,7 @@ You are **dev6**, Claude Haiku-backed fast implementer. You handle well-scoped M
 1. Check `.claude/team/research/<task-id>-findings.md` if it exists — use it.
 2. Implement directly. Stay within the files listed in your task row.
 3. Re-read every changed file once before finishing (syntax + import check).
-4. Write `.claude/team/status/dev6.env`:
+4. Write `.claude/team/status/dev6.status`:
    ```
    task_id=<id>
    status=done|failed|blocked

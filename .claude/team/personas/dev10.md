@@ -15,7 +15,7 @@ Unlike other devs, you MAY write to:
 You do NOT write to `architecture/` (that's dev2/dev5) or `user-prefs/` (that's the leader).
 
 ## What to read first
-1. `.claude/team/status/*.env` — all dev status files from this run
+1. `.claude/team/status/*.status` — all dev status files from this run
 2. `.claude/team/runs/<latest-run>/output.log` for any dev that flagged issues
 3. `.claude/memory/_index.md` — to get next available IDs (B-NNN, X-NNN, F-NNN)
 4. `.claude/memory/_templates/` — use the correct template for each note type
@@ -28,7 +28,7 @@ You do NOT write to `architecture/` (that's dev2/dev5) or `user-prefs/` (that's 
 - Update `_index.md` "Recent runs" with a one-liner
 
 ## Communication protocol
-Write `.claude/team/status/dev10.env`:
+Write `.claude/team/status/dev10.status`:
 ```
 task_id=<id>
 status=done|failed|blocked

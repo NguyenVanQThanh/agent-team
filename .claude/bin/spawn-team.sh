@@ -23,7 +23,7 @@
 # isolated checkout. The leader then diffs the worktrees and picks a winner.
 #
 # After spawning, this script `wait`s for all of them, then prints a status
-# summary read from .claude/team/status/<dev>.env (which each CLI must write
+# summary read from .claude/team/status/<dev>.status (which each CLI must write
 # when finished — see the persona prompt for the contract).
 #
 # IMPORTANT: this script enforces the team's "≥ 2 devs per run" rule.
@@ -32,6 +32,64 @@ set -uo pipefail
 # Source local env (OPUS_BIN, *_FLAGS, etc.) if present.
 _env_file="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )/env.sh"
 [[ -f "$_env_file" ]] && source "$_env_file"
+
+# -------- orphan-process cleanup (Fix 6 — 2026-05-20) --------
+#
+# When this script spawns CLI agents via `( ... ) &`, those background
+# processes have no controlling terminal. If THIS script gets killed
+# (Ctrl-C, parent session disconnect, SIGHUP from a tab closing), bash
+# by default does NOT send SIGHUP to the jobs — they survive as orphans
+# attached to PID 1 and keep burning tokens/CPU.
+#
+# Solution: install INT/TERM/HUP traps that walk the process tree of
+# every tracked child (`pgrep -P` recursive) and send TERM, then KILL
+# after a 1-second grace.
+#
+# Children are appended to _SPAWNED_PIDS at spawn time (in both pinned
+# and pool modes) so the trap knows what to clean up.
+
+_SPAWNED_PIDS=()
+
+_killtree() {
+  # Recursively send a signal to a PID and all its descendants (post-order).
+  local pid=$1 sig=${2:-TERM}
+  if ! kill -0 "$pid" 2>/dev/null; then return; fi
+  local kids
+  kids=$(pgrep -P "$pid" 2>/dev/null || true)
+  for k in $kids; do
+    _killtree "$k" "$sig"
+  done
+  kill -"$sig" "$pid" 2>/dev/null || true
+}
+
+_spawn_cleanup() {
+  # Disable re-entry: a slow CLI dying might itself raise SIGCHLD etc.
+  trap - INT TERM HUP
+  if (( ${#_SPAWNED_PIDS[@]} == 0 )); then
+    exit 130
+  fi
+  echo "" >&2
+  echo "[spawn-team.sh] caught signal — terminating ${#_SPAWNED_PIDS[@]} child process tree(s)..." >&2
+  for pid in "${_SPAWNED_PIDS[@]}"; do
+    _killtree "$pid" TERM
+  done
+  # Grace period for CLIs that handle TERM cleanly.
+  sleep 1
+  local still_alive=0
+  for pid in "${_SPAWNED_PIDS[@]}"; do
+    if kill -0 "$pid" 2>/dev/null; then
+      still_alive=$((still_alive + 1))
+      _killtree "$pid" KILL
+    fi
+  done
+  if (( still_alive > 0 )); then
+    echo "[spawn-team.sh] $still_alive process tree(s) did not exit on TERM — sent KILL." >&2
+  fi
+  echo "[spawn-team.sh] orphan cleanup done." >&2
+  exit 130
+}
+
+trap _spawn_cleanup INT TERM HUP
 
 SCRIPT_DIR="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )"
 REPO="$( cd -- "$SCRIPT_DIR/../.." &>/dev/null && pwd )"
@@ -181,7 +239,7 @@ if (( POOL_MODE == 1 )); then
   declare -a pool_pids=() pool_labels=()
   for spec in "${POOL_DEVS[@]}"; do
     IFS=':' read -r dev cli <<< "$spec"
-    rm -f "$STATUS_DIR/$dev.env" 2>/dev/null || true
+    rm -f "$STATUS_DIR/$dev.status" 2>/dev/null || true
     (
       while true; do
         tf=$("$SCRIPT_DIR/claim-task.sh" "$dev" 2>/dev/null) || break
@@ -196,32 +254,85 @@ $persona
 ## Pool mode
 
 You are running in **pool mode**. The runner has already claimed task **$tid**
-for you. The full spec is appended below by the runner.
+for you. The full spec is appended below by the runner with a `files=` list.
 
-When finished, the runner trailer will call complete-task.sh for you with
-the exit code. If your CLI exits 0 the task is recorded as done; otherwise
-failed. If you need to mark it specifically, run:
+## HARD SCOPE LOCK — read carefully
+
+Constraints (NON-NEGOTIABLE):
+
+1. **Edit ONLY the files in your task's `files=` column** (or create them).
+   Never edit `.claude/` (except your own status file at
+   `.claude/team/status/$dev.status`), `settings.json`, `.env*`, `.git/`,
+   or anything outside `files=`.
+2. **Do NOT scan past sessions, transcripts, or prior run logs.**
+   Your job is THIS task. Other devs' work is theirs.
+3. **If `files=` is empty**, this is a review-only task. Make zero file
+   changes. Deliver via complete-task.sh notes.
+4. **Stay on topic.** Off-scope ideas go into complete-task.sh's notes,
+   not into action.
+
+The runner WILL verify at exit that files in `files=` were actually
+modified. Silent no-ops (exit 0 + zero files touched) are recorded as
+`status=degraded` and re-routed by the leader. Don't try to game this —
+do the actual task.
+
+## Wrap up
+
+When finished, the runner trailer reads the runner's `status=` from
+meta.env and calls complete-task.sh:
+  - status=done      -> queue/done/
+  - status=partial   -> queue/done/  (with notes)
+  - status=degraded  -> queue/failed/ (zero expected files touched)
+  - status=failed    -> queue/failed/
+To mark explicitly, run before exiting:
   .claude/bin/complete-task.sh $dev $tid done|failed "<notes>"
-before exiting.
 
 DO NOT edit .claude/team/tasks.md (the leader aggregates).
 Read shared context: CLAUDE.md, .claude/config/coding-rules.md, .claude/memory/.
-
-Begin.
 PROMPT
 )
+        # Run the CLI and capture exit code.
         if ( cd "$REPO" && "$SCRIPT_DIR/run_${cli}.sh" --dev="$dev" --task-file="$tf" "$prompt" >/dev/null 2>&1 ); then
-          # If the dev did not write the final state itself, do it now.
-          [[ -f "$QUEUE_DIR/claimed/${tid}.task" ]] && \
-            "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" done "auto-finalised by spawn-team" >/dev/null
+          runner_ec=0
         else
-          [[ -f "$QUEUE_DIR/claimed/${tid}.task" ]] && \
-            "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" failed "runner exit non-zero" >/dev/null
+          runner_ec=$?
+        fi
+
+        # The runner writes status= to its meta.env after exit (see Fix 3 in
+        # _runner.sh). Read it back to distinguish done / partial / degraded
+        # / failed — `exit_code=0` alone is NOT proof the work was done.
+        if [[ -f "$QUEUE_DIR/claimed/${tid}.task" ]]; then
+          newest_meta=$(ls -1t "$REPO/.claude/team/runs"/*/meta.env 2>/dev/null \
+            | xargs -I{} grep -l "^dev=$dev$" {} 2>/dev/null | head -1)
+          runner_status=""
+          runner_note=""
+          if [[ -n "$newest_meta" && -f "$newest_meta" ]]; then
+            runner_status=$(grep -E '^status=' "$newest_meta" | tail -1 | cut -d= -f2- | tr -d '\r')
+            runner_note=$(grep -E '^notes_runner=' "$newest_meta" | tail -1 | cut -d= -f2- | tr -d '\r')
+          fi
+          case "$runner_status" in
+            done)
+              "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" done "auto-finalised (runner status=done)" >/dev/null
+              ;;
+            partial)
+              "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" done "partial: $runner_note" >/dev/null
+              ;;
+            degraded)
+              "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" failed "degraded: $runner_note (exit $runner_ec but no expected files touched)" >/dev/null
+              ;;
+            failed|"")
+              "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" failed "runner exit=$runner_ec status=${runner_status:-unknown}" >/dev/null
+              ;;
+            *)
+              "$SCRIPT_DIR/complete-task.sh" "$dev" "$tid" failed "unrecognised runner status=$runner_status" >/dev/null
+              ;;
+          esac
         fi
       done
     ) &
     pid=$!
     pool_pids+=("$pid"); pool_labels+=("$dev:$cli (pid $pid)")
+    _SPAWNED_PIDS+=("$pid")   # tracked for orphan cleanup (Fix 6)
     echo "pool worker $dev ($cli) started, pid $pid"
   done
 
@@ -383,7 +494,7 @@ Leader will diff each worktree at the end and pick a winner.
 - Edit files ONLY inside this worktree. Do NOT touch the main repo at $REPO.
 - Commit your work in the worktree (\`git add . && git commit -m '<msg>'\`) so the leader can diff it cleanly.
 - **Status file goes to the ABSOLUTE path below**, not the worktree's relative copy:
-  \`$REPO/.claude/team/status/$dev.env\`
+  \`$REPO/.claude/team/status/$dev.status\`
   (The leader reads only from the main repo's status dir.)
 - Be opinionated. Don't try to be \"safe\" — propose your real best solution; the other dev is doing the same.
 "
@@ -400,6 +511,39 @@ You are assigned task **$task** from .claude/team/tasks.md.
 
 $task_block
 $tournament_block
+
+----
+
+## HARD SCOPE LOCK — read carefully
+
+Your task above lists a \`files\` column (comma-separated). Your scope is
+STRICTLY limited to those paths. Constraints (NON-NEGOTIABLE):
+
+1. **Edit ONLY files in the \`files=\` column** (or create them if they
+   don't exist yet). Never edit \`.claude/\` (except your own status
+   file at \`.claude/team/status/$dev.status\`), \`settings.json\`,
+   \`.env*\`, \`.git/\`, or any path outside the listed files.
+
+2. **Do NOT scan past sessions, transcripts, or project history**
+   (e.g. \`~/.claude/projects/\`, \`.claude/team/runs/<other-id>/\`,
+   old \`leader-*.md\` diaries). Your job is THIS task, not auditing
+   prior work.
+
+3. **If \`files=\` is empty**, this is a REVIEW/RESEARCH task. Make ZERO
+   file changes (except your own status file). Your deliverable is the
+   body of \`notes=\` in your status file. Do not create files
+   speculatively.
+
+4. **Stay on topic.** If you find yourself thinking "I should also fix X"
+   where X is outside \`files=\`, STOP. Note it in \`notes=\` for the
+   leader to triage, but do NOT act on it.
+
+Drift kills the parallel team: a 30-minute "while I'm here" rabbit hole
+wastes 1 CLI's tokens and forces leader rework. Be narrow.
+
+The runner will VERIFY at the end that the files in \`files=\` actually
+got modified. If exit_code=0 but no expected files changed, the run is
+recorded as \`status=degraded\` (not done) and the leader will reroute.
 
 ----
 
@@ -421,7 +565,7 @@ PROMPT
 # Clear stale status files for the devs we're about to spawn.
 for spec in "$@"; do
   IFS=':' read -r dev cli task <<< "$spec"
-  rm -f "$STATUS_DIR/$dev.env" 2>/dev/null || true
+  rm -f "$STATUS_DIR/$dev.status" 2>/dev/null || true
 done
 
 declare -a pids=() labels=()
@@ -439,6 +583,7 @@ for spec in "$@"; do
   fi
   pid=$!
   pids+=("$pid")
+  _SPAWNED_PIDS+=("$pid")   # tracked for orphan cleanup (Fix 6)
   labels+=("$dev:$cli:$task (pid $pid)")
   if [[ -n "$wt_path" ]]; then
     echo "spawned $dev ($cli) for task $task in worktree $wt_path -> pid $pid"
@@ -471,7 +616,7 @@ for i in "${!pids[@]}"; do
   ec="${results[$i]}"
   echo ""
   echo "--- $dev ($cli) task=$task pid-exit=$ec ---"
-  status_file="$STATUS_DIR/$dev.env"
+  status_file="$STATUS_DIR/$dev.status"
   if [[ -f "$status_file" ]]; then
     cat "$status_file"
     if grep -q '^status=failed' "$status_file" || grep -q '^status=blocked' "$status_file"; then

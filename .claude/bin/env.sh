@@ -33,14 +33,20 @@ _CODEX_BASE='exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandb
 : "${DEEPSEEK_FLAGS:=exec --auto}"
 
 # ---- Claude Haiku (dev6, dev7) ----
-# Add --dangerously-skip-permissions manually if you want fully non-interactive mode.
+# NOTE: --dangerously-skip-permissions is REQUIRED for headless runs.
+# Without it, every file write triggers an interactive permission prompt
+# that hangs in non-interactive mode and the CLI silently exits with no
+# work done (see B-001 2026-05-20).
 : "${HAIKU_BIN:=claude --model haiku}"
-: "${HAIKU_FLAGS:=-p}"
+: "${HAIKU_FLAGS:=--dangerously-skip-permissions -p}"
 
 # ---- Claude Sonnet (dev8, dev9) ----
-# Add --dangerously-skip-permissions manually if you want fully non-interactive mode.
+# NOTE: --dangerously-skip-permissions is REQUIRED for headless runs.
+# Without it, every file write triggers an interactive permission prompt
+# that hangs in non-interactive mode and the CLI silently exits with no
+# work done (see B-001 2026-05-20).
 : "${SONNET_BIN:=claude --model sonnet}"
-: "${SONNET_FLAGS:=-p}"
+: "${SONNET_FLAGS:=--dangerously-skip-permissions -p}"
 
 # ---- Gemini CLI (dev11 — research pre-phase) ----
 : "${GEMINI_BIN:=gemini}"

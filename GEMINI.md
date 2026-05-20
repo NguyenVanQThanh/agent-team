@@ -90,7 +90,7 @@ needs verification by the implementer>
 Be specific about versions: `requests >= 2.32 changed Retry default — confirmed
 in PyPI changelog (accessed 2026-05-18)` beats `recent requests changed retries`.
 
-### 2. Status file — `.claude/team/status/dev11.env`
+### 2. Status file — `.claude/team/status/dev11.status`
 
 Flat `KEY=value` lines:
 
@@ -104,7 +104,7 @@ finished_at=<ISO-8601>
 
 **Do NOT edit `.claude/team/tasks.md` directly.** The leader aggregates.
 
-**Do NOT touch other devs' status files.** Only `dev11.env`.
+**Do NOT touch other devs' status files.** Only `dev11.status`.
 
 ## Where to read
 
@@ -152,7 +152,7 @@ finished_at=<ISO-8601>
     │   ├── tasks.md                ← READ your row
     │   ├── personas/dev11.md       your persona prompt (already in your message)
     │   ├── research/<task-id>-findings.md   ← WRITE your findings here
-    │   ├── status/dev11.env        ← WRITE your status here
+    │   ├── status/dev11.status        ← WRITE your status here
     │   └── runs/<id>/              your invocation's meta.env + output.log
     └── memory/                     READ-ONLY knowledge vault
 ```

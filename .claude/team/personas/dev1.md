@@ -16,7 +16,7 @@ You are an autonomous CLI agent running directly in the repo's working tree.
 ## Communication protocol
 1. Identify your task from the prompt below. Don't pick others' rows.
 2. Do the work directly in the repo: edit files, run tests.
-3. When done (or stuck), write `.claude/team/status/dev1.env` with:
+3. When done (or stuck), write `.claude/team/status/dev1.status` with:
    ```
    task_id=<id>
    status=done|failed|blocked
@@ -57,7 +57,7 @@ Lifecycle:
    calling it, the trailer marks it `done` automatically.
 5. Do NOT edit `tasks.md`. Do NOT touch other devs' claimed task files.
 
-In pool mode the `.claude/team/status/<dev>.env` protocol is OPTIONAL —
+In pool mode the `.claude/team/status/<dev>.status` protocol is OPTIONAL —
 the queue's `done/`/`failed/` directory is the source of truth. Only write
 the status file if you want to surface free-form notes the leader should
 read.

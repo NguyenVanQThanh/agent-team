@@ -54,13 +54,13 @@ leader (Claude Opus subagent)
    │        ├─ builds each CLI's prompt = persona + task row + shared context
    │        ├─ launches each via .claude/bin/run_<cli>.sh in parallel (&)
    │        ├─ waits for all
-   │        └─ each CLI writes .claude/team/status/<dev>.env when finished
+   │        └─ each CLI writes .claude/team/status/<dev>.status when finished
    │
    ├─ [Phase 2 — post, always run after a significant batch]
    │     .claude/bin/spawn-team.sh dev10:deepseek:T-POST dev7:haiku:T-SMOKE
    │        └─ dev10 synthesises all status files into vault notes
    │
-   └─ leader reads status/<dev>.env, aggregates tasks.md, summarises to user
+   └─ leader reads status/<dev>.status, aggregates tasks.md, summarises to user
 ```
 
 ## How to invoke
@@ -101,7 +101,7 @@ The leader will plan and spawn. To watch CLIs live in a second terminal:
     personas/
       dev1.md ... dev13.md      # prompt fragments injected into each CLI
     status/
-      dev1.env ... dev13.env    # status protocol; each CLI writes its own  [gitignored]
+      dev1.status ... dev13.status    # status protocol; each CLI writes its own  [gitignored]
     runs/
       leader-<TS>.md            # per-run diary the leader keeps             [gitignored]
       <TS>-<cli>-<pid>/         # per-CLI invocation: meta.env + output.log  [gitignored]
@@ -120,7 +120,7 @@ The leader will plan and spawn. To watch CLIs live in a second terminal:
 
 ## Status file protocol
 
-Each persona writes `.claude/team/status/<dev>.env` exactly once per run.
+Each persona writes `.claude/team/status/<dev>.status` exactly once per run.
 Required fields: `task_id`, `status` (= `done|failed|blocked`), `notes`,
 `finished_at`. Optional fields depend on the persona (see each persona file).
 Leader reads them after `spawn-team.sh` returns.

@@ -29,3 +29,7 @@ This is the team's long-lived knowledge base. The shared task list
 ## Recent runs
 
 _Leader appends a one-line summary per run._
+
+- 2026-05-20 — run 20260520-033403 — shipped [[features/F-001-browser-games-dashboard]];
+  spawned dev8+dev9+dev6, all 3 sub-CLIs blocked by harness write perms → leader self-handled
+  all 6 files. Follow-up T-FU01 filed in [[../team/tasks#Backlog]].

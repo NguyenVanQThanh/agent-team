@@ -71,7 +71,7 @@ the user — there is no human in your loop.
 You may write to the working tree (source files, tests, configs) **as your
 task requires**. Plus exactly one mandatory artifact:
 
-### Your status file: `.claude/team/status/<dev>.env`
+### Your status file: `.claude/team/status/<dev>.status`
 
 When you finish (success, failure, or blocked), **overwrite** this file with
 flat `KEY=value` lines. Required fields:
@@ -149,7 +149,7 @@ Only certain personas may write to `.claude/memory/`:
     ├── team/
     │   ├── tasks.md            ← READ your row
     │   ├── personas/<dev>.md   the persona prompt you received
-    │   ├── status/<dev>.env    ← WRITE here when done (yours only)
+    │   ├── status/<dev>.status    ← WRITE here when done (yours only)
     │   ├── runs/<id>/          your invocation's meta.env + output.log
     │   └── plans/              dev2 + dev5 drop design docs here
     └── memory/                 Obsidian vault — see write access above
@@ -168,7 +168,7 @@ solving the **same task** in parallel, each in your own git worktree under
 `.claude/team/worktrees/<task_id>-<dev>/`. Edit only inside your worktree path,
 commit your work (`git add . && git commit -m '...'`), and write your status
 file to the **absolute path** the prompt gives you (in the main repo's
-`.claude/team/status/<dev>.env`). Do not read the other dev's worktree during
+`.claude/team/status/<dev>.status`). Do not read the other dev's worktree during
 the run — independent attempts are the whole point.
 
 ## When you get confused

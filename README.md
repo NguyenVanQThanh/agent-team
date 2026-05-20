@@ -23,7 +23,7 @@ The leader is a **Claude Opus subagent** that plans work, slices it into tasks, 
 │ dev1/2   │ dev3/4   │ dev6/7   │ dev8/9   │  dev11   │
 │ dev12/13 │ dev10    │          │          │          │
 └──────────┴──────────┴──────────┴──────────┴──────────┘
-      │ each writes .claude/team/status/<dev>.env on finish
+      │ each writes .claude/team/status/<dev>.status on finish
       │ each writes .claude/team/runs/<run-id>/{output.log,meta.env}
       ▼
   .claude/memory/   (durable Obsidian-style vault)
@@ -209,7 +209,7 @@ Delegate work to the leader agent from a Claude Code chat session. Mention "team
 
 ## Shared File Protocol
 
-Every dev must write `.claude/team/status/<dev>.env` before exiting. Required fields:
+Every dev must write `.claude/team/status/<dev>.status` before exiting. Required fields:
 
 ```bash
 task_id=T-001

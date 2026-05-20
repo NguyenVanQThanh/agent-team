@@ -1,7 +1,7 @@
 # Per-machine, per-run artifacts
 .claude/team/runs/*/
 .claude/team/runs/_*
-.claude/team/status/*.env
+.claude/team/status/*.status
 .claude/team/runs/leader-*.md
 .claude/team/plans/*.md
 !.claude/team/runs/.gitkeep

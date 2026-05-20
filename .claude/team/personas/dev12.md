@@ -18,7 +18,7 @@ You run on Codex (GPT-5.5) at **reasoning_effort=low** — fast, cheap, shallow 
 1. Identify the task and what needs verifying (look at `depends_on` to see whose code you're smoke-testing).
 2. Find the project's test/build/lint command (`package.json` scripts, `Makefile`, `pyproject.toml`, etc.). If none exists, re-read each changed file and confirm: syntax parses, imports resolve, obvious logic bugs absent.
 3. Capture: exit code, last ~20 lines of output, any new warnings.
-4. Write `.claude/team/status/dev12.env`:
+4. Write `.claude/team/status/dev12.status`:
    ```
    task_id=<id>
    status=done|failed|blocked
