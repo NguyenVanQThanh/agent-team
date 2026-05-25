@@ -1,0 +1,251 @@
+<!--
+  @file        fruitbox.html
+  @description Standalone FruitBox game page. UI shell + inline styles; logic
+               lives in js/fruitbox.js. Player drags a rectangle over numbered
+               apples; if the apples covered sum to exactly 10, they clear and
+               the player earns one point per apple. Includes Light Colors
+               checkbox, score, timer, remaining counter, and reset button.
+
+  @createdAt   2026-05-20
+  @createdBy   leader
+  @updatedAt   2026-05-20
+  @updatedBy   dev8 + leader (verification polish: timer placeholder 2:00→1:00, removed stale #rubberband markup now created in buildDOM)
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FruitBox</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍎</text></svg>" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 12px;
+    }
+    body.light-colors {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      color: #334155;
+    }
+    a.back {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+      align-self: flex-start;
+    }
+    a.back:hover { color: #ef4444; }
+    body.light-colors a.back { color: #475569; }
+    body.light-colors a.back:hover { color: #dc2626; }
+
+    h1 {
+      margin: 0 0 16px;
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+    }
+    .controls {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .controls button {
+      background: linear-gradient(90deg, #ef4444, #f97316);
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .controls button:hover { transform: scale(1.04); }
+    .controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .hud {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.65);
+      border: 1px solid #334155;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 1rem;
+      margin-bottom: 14px;
+    }
+    body.light-colors .hud {
+      background: rgba(255, 255, 255, 0.7);
+      border-color: #fcd34d;
+      color: #334155;
+    }
+    .hud .label { color: #94a3b8; margin-right: 4px; font-size: 0.85rem; }
+    body.light-colors .hud .label { color: #64748b; }
+    .hud .value { font-weight: 700; font-variant-numeric: tabular-nums; }
+    #score.bump { animation: bump 0.32s ease; color: #fbbf24; }
+    body.light-colors #score.bump { color: #d97706; }
+    @keyframes bump {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.35); }
+      100% { transform: scale(1); }
+    }
+
+    #board-wrap {
+      position: relative;
+      overflow: auto;
+      max-width: 100%;
+      padding: 6px;
+    }
+    #board {
+      position: relative;
+      display: grid;
+      gap: 0;
+      user-select: none;
+      touch-action: none;
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      padding: 2px;
+    }
+    body.light-colors #board {
+      background: #fff7ed;
+      border-color: #fcd34d;
+    }
+    .apple {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+      font-size: 0.95rem;
+      position: relative;
+      background-image: radial-gradient(circle at 35% 30%, #f87171 0%, #dc2626 60%, #7f1d1d 100%);
+      border-radius: 50%;
+      margin: 1px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+    }
+    body.light-colors .apple {
+      background-image: radial-gradient(circle at 35% 30%, #fecaca 0%, #fb7185 60%, #be123c 100%);
+      color: #fff;
+    }
+    .apple.empty {
+      background: transparent;
+      box-shadow: none;
+      pointer-events: none;
+    }
+    .apple.selected {
+      transform: scale(1.08);
+      box-shadow: 0 0 0 2px #fbbf24, 0 0 12px rgba(251, 191, 36, 0.6);
+      z-index: 2;
+    }
+    #rubberband {
+      position: absolute;
+      display: none;
+      border: 1.5px dashed #fbbf24;
+      background: rgba(251, 191, 36, 0.12);
+      pointer-events: none;
+      border-radius: 2px;
+      z-index: 1;
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.82);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 50;
+    }
+    body.light-colors #overlay { background: rgba(255, 247, 237, 0.92); }
+    #overlay.hidden { display: none; }
+    #overlay .panel {
+      background: #1e293b;
+      border: 1px solid #fbbf24;
+      border-radius: 14px;
+      padding: 32px 28px;
+      text-align: center;
+      max-width: 360px;
+      color: #e2e8f0;
+    }
+    body.light-colors #overlay .panel {
+      background: white;
+      color: #334155;
+    }
+    .overlay-msg { font-size: 1.15rem; margin-bottom: 18px; }
+    .overlay-btn {
+      background: linear-gradient(90deg, #ef4444, #f97316);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .overlay-btn:hover { transform: scale(1.04); }
+
+    .hint {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin-top: 12px;
+      text-align: center;
+      max-width: 540px;
+    }
+    body.light-colors .hint { color: #64748b; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">← Back to dashboard</a>
+  <h1>🍎 FruitBox</h1>
+
+  <div class="controls">
+    <button id="new-game" type="button">New game</button>
+    <label>
+      <input type="checkbox" id="light-colors" />
+      Light Colors
+    </label>
+  </div>
+
+  <div class="hud">
+    <span><span class="label">Score</span><span class="value" id="score">0</span></span>
+    <span><span class="label">Time</span><span class="value" id="timer">1:00</span></span>
+    <span><span class="label">Apples</span><span class="value" id="remaining">170</span></span>
+  </div>
+
+  <div id="board-wrap">
+    <div id="board"></div>
+  </div>
+
+  <p class="hint">Drag a rectangle across apples whose numbers add up to <strong>10</strong>.
+    Each apple you capture is worth 1 point. The board refills when fully cleared.</p>
+
+  <div id="overlay" class="hidden">
+    <div class="panel">
+      <div class="overlay-msg">Round over.</div>
+      <button class="overlay-btn" onclick="document.getElementById('new-game').click()">Play again</button>
+    </div>
+  </div>
+
+  <script src="js/fruitbox.js"></script>
+</body>
+</html>

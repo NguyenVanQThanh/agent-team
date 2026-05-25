@@ -1,0 +1,47 @@
+<!--
+  @file        index.html
+  @description Dashboard / landing page for the games hub. Lists Minesweeper
+               and FruitBox in two responsive cards, each with a Play button
+               that navigates to the standalone game page.
+
+  @createdAt   2026-05-20
+  @createdBy   leader
+  @updatedAt   2026-05-20
+  @updatedBy   leader
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Games Hub</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>🎮 Games Hub</h1>
+    <p>Two tiny browser games, zero dependencies. Pick one and play.</p>
+  </header>
+
+  <main class="cards">
+    <article class="card">
+      <div class="card-icon" aria-hidden="true">💣</div>
+      <h2>Minesweeper</h2>
+      <p>The classic. Reveal cells, flag mines, don't blow yourself up. Choose your difficulty.</p>
+      <a class="btn-play" href="minesweeper.html">Play</a>
+    </article>
+
+    <article class="card">
+      <div class="card-icon" aria-hidden="true">🍎</div>
+      <h2>FruitBox</h2>
+      <p>Drag a rectangle over apples whose numbers add up to <strong>10</strong>. Score one point per apple captured before time runs out.</p>
+      <a class="btn-play" href="fruitbox.html">Play</a>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    Built with vanilla HTML, CSS, and JavaScript · No build step.
+  </footer>
+</body>
+</html>
