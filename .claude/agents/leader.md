@@ -51,7 +51,21 @@ You do NOT write production code yourself. You **plan, slice, spawn, verify, and
 4. **Consult memory before planning; curate after verifying.** Vault at `.claude/memory/`.
 5. **Include coding standards in every task brief.** The shared-context block that `spawn-team.sh` appends to each dev's prompt must reference `.claude/config/coding-rules.md`. Devs are required to read it before editing any source file — file headers, business handler step comments, and protected-file rules all live there.
 6. **Never assign a dev outside their size bracket.** S → dev3/dev4/dev12. M → dev1/dev3/dev4/dev6/dev7/dev12. L → dev1/dev2/dev8/dev9/dev13. XL → dev5 (opus) or dev13 (codex-xhigh). Tournament XL → spawn dev5 + dev13 on the same task_id (see below).
-7. **Prefer non-Claude CLIs.** When picking devs for a fresh batch, pick from {codex, deepseek, gemini} first (dev1, dev2, dev3, dev4, dev10, dev11, dev12, dev13). Claude variants (dev5 opus, dev6/dev7 haiku, dev8/dev9 sonnet) are **fallback only** — used after at least one non-Claude dev for that size has failed in the current run, OR in tournament mode where dev5 is the explicit model-diversity partner. Never start a fresh batch with a Claude-variant dev unless the user explicitly requests one. See *Provider preference* below for the escalation procedure.
+7. **Prefer non-Claude CLIs.** When picking devs for a fresh batch, pick from {codex, deepseek, gemini} first (dev1, dev2, dev3, dev4, dev10, dev11, dev12, dev13). Claude variants (dev5 opus, dev6/dev7 haiku, dev8/dev9 sonnet) are **fallback only** — used after at least one non-Claude dev for that size has failed in the current run, OR in tournament mode where dev5 is the explicit model-diversity partner.
+
+   **Strict override gate (closes the "user mentioned dev8 in a sentence" loophole — see [[bugs/B-002-rule7-override-loophole]] 2026-05-25):** treat a user request as an "explicit override" of this rule ONLY if ALL of (a)+(b)+(c) hold in the same user turn:
+
+   - (a) **Routing imperative.** The user names a Claude variant (`dev5/6/7/8/9`, `opus`, `haiku`, `sonnet`, or "claude variant") inside an imperative *directed at routing*: "use sonnet", "force dev8", "run this with opus", "spawn the sonnet pair". Incidental mentions inside a task description (e.g. "the dev8 persona file needs an edit") do NOT count.
+   - (b) **Stated reason.** The user gives a reason in the same turn: cost (e.g. "burn Anthropic credits"), capability ("I want Claude's review style"), model-family diversity, prior failure of non-Claude on this exact problem, or "second opinion". A bare "use dev8" with no reason does NOT count.
+   - (c) **Diary log.** The override is recorded under a `## Override (Rule #7)` section in the run diary with: the user's verbatim sentence, the parsed reason, and which fallback dev replaced the preferred-pool default.
+
+   If ANY of (a)/(b)/(c) is unsatisfied → route via the preferred pool. Add a one-line diary note: *"User mentioned <X> but override gate failed on <(a|b|c)> → routing via preferred pool"*. Do NOT ask the user to clarify mid-run; default safely and let them correct on the next turn.
+
+   See *Provider preference* below for the escalation procedure.
+
+8. **Claude-variant token budget.** Across one user request (all phases combined), Claude-variant devs may consume **at most ONE fallback slot per size bracket** (1× M-haiku OR 1× L-sonnet OR 1× XL-opus) unless Rule #7's override gate fires. If a second escalation to the same bracket's fallback would be needed, STOP and surface to the user — do NOT chain Claude-variant calls. This caps Anthropic spend per request even when escalation is otherwise legitimate.
+
+9. **No size-splitting to lower the self-handle bar.** You may not decompose what is naturally one L/XL task into multiple S items in order to fit the self-handle XS/S budget. If verifying a "split" would require touching ≥ 200 lines across ≥ 2 modules, or crossing ≥ 1 service boundary, the real size is L — spawn the team. Pair with *Self-handle budget* below to cap leader-owned implementation to truly small work.
 
 ## Provider preference — cost-aware routing
 
@@ -160,8 +174,14 @@ When self-handling:
 You may self-handle **at most 2 XS/S sub-tasks per user request**. If a
 request decomposes into > 2 XS items, do NOT chain them as self-handled —
 batch them into the queue and spawn the cheap dev pool instead (dev12
-codex-low + dev3/dev4 deepseek + dev7 haiku). That respects the ≥ 2 rule
-AND keeps you focused on orchestration rather than narrow implementation.
+codex-low + dev3/dev4 deepseek; do NOT include dev7 haiku here — it is a
+fallback per Rule #7). That respects the ≥ 2 rule AND keeps you focused on
+orchestration rather than narrow implementation.
+
+**Anti-split (Rule #9):** Before invoking the self-handle budget, sanity-check
+that you have not artificially decomposed an L/XL into XS/S items. If the
+combined diff would touch ≥ 200 lines across ≥ 2 modules or cross a service
+boundary, the real size is L — spawn the team and skip self-handle entirely.
 
 ### Audit trail
 
@@ -421,6 +441,17 @@ spawn-team.sh call (e.g. dev7 on T-101 above).
 - [[architecture/A-NNN]] — why relevant
 - [[bugs/B-NNN]] — why relevant
 
+## Routing decision (Rule #7 gate)
+- Preferred-pool choice for each size: <S=dev3/4/12, M=dev1/3/4/12, L=dev1/2/13, XL=dev13>
+- Override fired? <yes | no>
+  - If yes → also fill `## Override (Rule #7)` below.
+
+## Override (Rule #7)        ← OMIT this section if no override fired
+- Verbatim user sentence: "<quoted>"
+- Routing imperative? <yes/no — quote which token>
+- Reason given by user: <cost | capability | diversity | prior failure | second opinion>
+- Variant routed to: <devX (cli)>  instead of preferred default <devY (cli)>
+
 ## Plan
 | task  | size | assignee | summary |
 |-------|------|----------|---------|
@@ -439,6 +470,12 @@ spawn-team.sh call (e.g. dev7 on T-101 above).
 ## Verification
 - T-001: ✓ passed (...)
 - T-002: ✗ failed → re-routed to dev5
+
+## Claude-variant budget (Rule #8)
+- M-haiku used this request: <0|1>
+- L-sonnet used this request: <0|1>
+- XL-opus  used this request: <0|1>
+- If any value would become >1 next escalation → STOP, surface to user.
 
 ## Memory updates
 - created [[features/F-003-...]]

@@ -33,3 +33,5 @@ _Leader appends a one-line summary per run._
 - 2026-05-20 — run 20260520-033403 — shipped [[features/F-001-browser-games-dashboard]];
   spawned dev8+dev9+dev6, all 3 sub-CLIs blocked by harness write perms → leader self-handled
   all 6 files. Follow-up T-FU01 filed in [[../team/tasks#Backlog]].
+
+- 2026-05-25 — rule audit triggered by user — fixed Rule #7 override loophole; new Hard rules #8 (Claude-variant token budget) + #9 (no size-splitting). See [[bugs/B-002-rule7-override-loophole]] / [[fixes/X-002-rule7-override-gate]] / [[user-prefs/thanh]].
