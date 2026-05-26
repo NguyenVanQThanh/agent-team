@@ -118,11 +118,24 @@ while [[ $# -gt 0 ]]; do
       FROM_PLAN="${2:-}"; shift 2 ;;
     --from-plan=*)
       FROM_PLAN="${1#--from-plan=}"; shift ;;
+    --)
+      # Phase separator: marks the boundary between sequential phases.
+      # Specs before `--` run as one phase; specs after `--` wait for the
+      # previous phase to fully finish before spawning. Use this for
+      # writer -> verifier ordering inside a single invocation without
+      # racing. Recorded as a sentinel in PINNED_SPECS; the phase splitter
+      # below picks it up. Only meaningful for pinned mode.
+      PINNED_SPECS+=("__PHASE_SEP__"); shift ;;
     -h|--help)
       cat >&2 <<USAGE
 usage:
   # pinned mode (legacy, leader pre-assigns task_id):
   $0 <dev>:<cli>:<task_id> <dev>:<cli>:<task_id> [more...]
+
+  # phased pinned mode (writer -> verifier sequentially):
+  $0 <dev>:<cli>:<task_id> [more...] -- <dev>:<cli>:<task_id> [more...]
+  # phase 1 runs (in parallel) to completion, then phase 2 starts.
+  # multiple '--' separators are allowed for 3+ phases.
 
   # pool mode (devs pull from .claude/team/queue/pending/):
   $0 --pool <dev>:<cli> <dev>:<cli> [more...]
@@ -131,7 +144,7 @@ usage:
   $0 --from-plan .claude/team/plans/<id>.md --pool <dev>:<cli> [more...]
   $0 --from-plan .claude/team/plans/<id>.md <dev>:<cli>:<task_id> [more...]
 
-Hard rule (all modes): >= 2 distinct devs per run.
+Hard rule (all modes): >= 2 distinct devs per run (counted across all phases).
 USAGE
       exit 0 ;;
     *)
@@ -359,6 +372,57 @@ PROMPT
   exit 0
 fi
 
+# -------- phase split (pinned mode only) --------
+# If PINNED_SPECS contains __PHASE_SEP__ sentinels, split into phase groups
+# and recursively invoke ourselves per phase (sequentially). Each phase
+# bypasses the per-invocation >=2 distinct devs check; the rule is instead
+# enforced once across the union of all phases.
+declare -a PHASE_GROUPS=()
+declare -a _cur_phase=()
+for _s in "${PINNED_SPECS[@]:-}"; do
+  if [[ "$_s" == "__PHASE_SEP__" ]]; then
+    if (( ${#_cur_phase[@]} > 0 )); then
+      PHASE_GROUPS+=("$(IFS='|'; echo "${_cur_phase[*]}")")
+      _cur_phase=()
+    fi
+  elif [[ -n "$_s" ]]; then
+    _cur_phase+=("$_s")
+  fi
+done
+if (( ${#_cur_phase[@]} > 0 )); then
+  PHASE_GROUPS+=("$(IFS='|'; echo "${_cur_phase[*]}")")
+fi
+
+if (( ${#PHASE_GROUPS[@]} > 1 )); then
+  # Enforce >=2 distinct devs across the UNION of phases.
+  declare -A _all_devs=()
+  for _p in "${PHASE_GROUPS[@]}"; do
+    IFS='|' read -ra _specs <<< "$_p"
+    for _s in "${_specs[@]}"; do
+      _all_devs["${_s%%:*}"]=1
+    done
+  done
+  if (( ${#_all_devs[@]} < 2 )); then
+    echo "error: >= 2 distinct devs required across all phases (got ${#_all_devs[@]})" >&2
+    exit 2
+  fi
+
+  echo "phase mode: ${#PHASE_GROUPS[@]} sequential phase(s) detected"
+  overall_fail=0
+  for _i in "${!PHASE_GROUPS[@]}"; do
+    IFS='|' read -ra _phase_specs <<< "${PHASE_GROUPS[$_i]}"
+    echo ""
+    echo "================ PHASE $((_i+1)) of ${#PHASE_GROUPS[@]}: ${_phase_specs[*]} ================"
+    SPAWN_TEAM_BYPASS_MIN_DEVS=1 "$0" "${_phase_specs[@]}"
+    _rc=$?
+    overall_fail=$((overall_fail + _rc))
+    if (( _rc > 0 )); then
+      echo "phase $((_i+1)) had $_rc failure(s) — continuing to next phase" >&2
+    fi
+  done
+  exit "$overall_fail"
+fi
+
 # -------- legacy pinned mode --------
 # Replace positional args with the collected pinned specs so the rest of
 # the original script works unchanged.
@@ -366,26 +430,32 @@ set -- "${PINNED_SPECS[@]:-}"
 
 # -------- pre-flight (pinned mode) --------
 
-if [[ $# -lt 2 || -z "${1:-}" ]]; then
+_min_args_required=2
+if [[ "${SPAWN_TEAM_BYPASS_MIN_DEVS:-0}" == "1" ]]; then
+  _min_args_required=1   # recursive phase-call may legitimately have 1 spec
+fi
+if [[ $# -lt $_min_args_required || -z "${1:-}" ]]; then
   cat >&2 <<USAGE
 usage: $0 <dev>:<cli>:<task_id> <dev>:<cli>:<task_id> [more...]
+       $0 <dev>:<cli>:<task_id> [more...] -- <dev>:<cli>:<task_id> [more...]
        $0 --pool <dev>:<cli> <dev>:<cli> [more...]
        $0 --from-plan PATH ...
 
 Examples:
   $0 dev1:codex:T-001 dev3:deepseek:T-002
   $0 dev2:codex:T-005 dev5:opus:T-006 dev4:deepseek:T-007
+  $0 dev8:sonnet:T-WRITE -- dev12:codex:T-VERIFY  # writer then verifier
   $0 dev5:opus:T-100 dev13:codex:T-100  # tournament on T-100
   $0 --pool dev1:codex dev4:deepseek dev8:sonnet
 
-Hard rule: at least 2 specs required (>= 2 devs per run).
+Hard rule: at least 2 specs required (>= 2 devs per run, counted across phases).
 USAGE
   exit 2
 fi
 
 # Validate each spec, also count distinct devs and group by task.
-declare -A seen_devs
-declare -A task_devs   # task_id -> space-separated dev list
+declare -A seen_devs=()
+declare -A task_devs=()   # task_id -> space-separated dev list
 for spec in "$@"; do
   IFS=':' read -r dev cli task <<< "$spec"
   if [[ -z "$dev" || -z "$cli" || -z "$task" ]]; then
@@ -401,13 +471,13 @@ for spec in "$@"; do
   task_devs[$task]="${task_devs[$task]:-} $dev"
 done
 
-if (( ${#seen_devs[@]} < 2 )); then
+if (( ${#seen_devs[@]} < 2 )) && [[ "${SPAWN_TEAM_BYPASS_MIN_DEVS:-0}" != "1" ]]; then
   echo "error: >= 2 distinct devs required per run (got ${#seen_devs[@]})" >&2
   exit 2
 fi
 
 # Detect tournament tasks (>=2 devs share a task_id).
-declare -A is_tournament
+declare -A is_tournament=()
 for task in "${!task_devs[@]}"; do
   # shellcheck disable=SC2206
   arr=( ${task_devs[$task]} )
@@ -418,7 +488,7 @@ done
 
 # -------- tournament: prepare git worktrees --------
 
-declare -A worktree_path  # key="<dev>:<task>" -> absolute worktree path
+declare -A worktree_path=()  # key="<dev>:<task>" -> absolute worktree path
 
 if (( ${#is_tournament[@]} > 0 )); then
   if ! command -v git >/dev/null 2>&1; then
