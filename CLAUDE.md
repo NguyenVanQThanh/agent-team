@@ -72,8 +72,8 @@ Roster:
 | dev5  | Claude Opus  | XL      | main   | n/a       | Senior: hard bugs, arch rewrites (costly)         |
 | dev6  | Claude Haiku | M       | main   | n/a       | Fast coder, simple tasks                          |
 | dev7  | Claude Haiku | M       | main   | n/a       | Smoke tester, quick verification                  |
-| dev8  | Claude Sonnet| L       | main   | n/a       | Quality implementer, multi-file features          |
-| dev9  | Claude Sonnet| L       | main   | n/a       | Reviewer, integrator, cross-module checks         |
+| dev8  | Claude Sonnet| M       | main   | n/a       | Quality implementer, focused features (down-ranked from L 2026-05-26 — Windows orphan hang on long L) |
+| dev9  | Claude Sonnet| M       | main   | n/a       | Reviewer, integrator, cross-module checks (down-ranked from L 2026-05-26) |
 | dev10 | DeepSeek     | M       | post   | n/a       | Memory scribe — writes bugs/fixes vault           |
 | dev11 | Gemini CLI   | M       | pre    | n/a       | Researcher — external info before main batch      |
 | dev12 | Codex        | S, M    | main   | low       | Smoke tester / lint / quick verify (fast, cheap)  |
