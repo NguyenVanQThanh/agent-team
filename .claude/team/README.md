@@ -1,7 +1,7 @@
 # Agent team — usage guide
 
-A 1-leader + 13-dev agent team running on this repo. **Only the leader is a
-Claude subagent.** The 13 devs are external agentic CLIs (Codex / DeepSeek /
+A 1-leader + 14-dev agent team running on this repo. **Only the leader is a
+Claude subagent.** The 14 devs are external agentic CLIs (Codex / DeepSeek /
 Claude Haiku / Claude Sonnet / Claude Opus / Gemini) launched as real background
 processes and communicating via shared files.
 
@@ -23,6 +23,7 @@ processes and communicating via shared files.
 | dev11  | Gemini         | M       | pre   | Researcher — external research before main batch   |
 | dev12  | Codex          | S, M    | main  | Smoke tester / lint fixer / quick verify (cheap)   |
 | dev13  | Codex          | L, XL   | main  | Senior coder, tournament partner with dev5         |
+| dev14  | Claude Opus    | L, XL   | main  | Senior reviewer + security gate (review-only)      |
 
 **Routing quick-reference:**
 ```
@@ -30,9 +31,15 @@ Size S  → dev3, dev4, dev12
 Size M  → dev1, dev3, dev4, dev6, dev7, dev12
 Size L  → dev1, dev2, dev8, dev9, dev13
 Size XL → dev5 or dev13 (or both — tournament mode)
+Code review → dev9 (sonnet) for L/M; dev14 (opus) for XL/cross-module/security
+Security gate → dev14 (opus) — reviews security-sensitive diffs at ANY size
 Pre-phase research → dev11 (gemini)
 Post-phase memory  → dev10 (deepseek, always paired with ≥1 other dev)
 ```
+
+dev5 implements, dev14 reviews (generator ≠ verifier). dev14 is review-only
+and runs after the implementer via the phase separator:
+`spawn-team.sh dev13:codex:T-100 -- dev14:opus:T-100-review`.
 
 ## How a run flows (3 phases)
 
@@ -99,9 +106,9 @@ The leader will plan and spawn. To watch CLIs live in a second terminal:
   team/
     tasks.md                    # shared task list (per run, leader writes)
     personas/
-      dev1.md ... dev13.md      # prompt fragments injected into each CLI
+      dev1.md ... dev14.md      # prompt fragments injected into each CLI
     status/
-      dev1.status ... dev13.status    # status protocol; each CLI writes its own  [gitignored]
+      dev1.status ... dev14.status    # status protocol; each CLI writes its own  [gitignored]
     runs/
       leader-<TS>.md            # per-run diary the leader keeps             [gitignored]
       <TS>-<cli>-<pid>/         # per-CLI invocation: meta.env + output.log  [gitignored]

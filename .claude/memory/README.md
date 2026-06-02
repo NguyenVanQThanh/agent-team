@@ -41,10 +41,12 @@ See `CLAUDE.md` "Obsidian memory vault" section for full rules:
 | dev2   | `architecture/`                           |
 | dev5   | `architecture/`, `fixes/`, `bugs/`        |
 | dev10  | `bugs/`, `fixes/`, `features/`            |
+| dev14  | `bugs/` (confirmed review/security findings) |
 | others | read-only                                 |
 
 dev10 (DeepSeek, post-phase) is the primary memory scribe after each main batch.
 dev5 (Opus) writes directly only on XL tasks where it authors the fix itself.
+dev14 (Opus reviewer) writes `bugs/` notes for findings it confirms during review.
 
 ## Per-section MOCs
 

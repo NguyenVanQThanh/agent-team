@@ -1,8 +1,8 @@
 # Agent Team
 
-A 1-leader + 13-dev autonomous coding team built on top of Claude Code.
+A 1-leader + 14-dev autonomous coding team built on top of Claude Code.
 
-The leader is a **Claude Opus subagent** that plans work, slices it into tasks, and spawns external CLI processes in parallel. The 13 "devs" are real background processes — each a different AI CLI (Codex, DeepSeek, Claude Haiku/Sonnet/Opus, Gemini) given a persona and a task.
+The leader is a **Claude Opus subagent** that plans work, slices it into tasks, and spawns external CLI processes in parallel. The 14 "devs" are real background processes — each a different AI CLI (Codex, DeepSeek, Claude Haiku/Sonnet/Opus, Gemini) given a persona and a task.
 
 ---
 
@@ -19,8 +19,8 @@ The leader is a **Claude Opus subagent** that plans work, slices it into tasks, 
       │
       ▼
 ┌──────────┬──────────┬──────────┬──────────┬──────────┐
-│  codex   │ deepseek │  haiku   │  sonnet  │  gemini  │
-│ dev1/2   │ dev3/4   │ dev6/7   │ dev8/9   │  dev11   │
+│  codex   │ deepseek │  haiku   │  sonnet  │  gemini  │   opus
+│ dev1/2   │ dev3/4   │ dev6/7   │ dev8/9   │  dev11   │ dev5/dev14
 │ dev12/13 │ dev10    │          │          │          │
 └──────────┴──────────┴──────────┴──────────┴──────────┘
       │ each writes .claude/team/status/<dev>.status on finish
@@ -48,6 +48,7 @@ The leader is a **Claude Opus subagent** that plans work, slices it into tasks, 
 | dev11  | gemini   | M          | pre   | Researcher — external research before main batch   |
 | dev12  | codex    | S, M       | main  | Smoke tester / lint fixer / quick verify (cheap)   |
 | dev13  | codex    | L, XL      | main  | Senior coder, tournament partner with dev5         |
+| dev14  | opus     | L, XL      | main  | Senior reviewer + security gate (review-only)      |
 
 **Routing quick-reference:**
 ```
@@ -55,9 +56,17 @@ Size S  → dev3, dev4, dev12
 Size M  → dev1, dev3, dev4, dev6, dev7, dev12
 Size L  → dev1, dev2, dev8, dev9, dev13
 Size XL → dev5 or dev13 (or both in tournament mode)
+Code review → dev9 (sonnet) for L/M; escalate to dev14 (opus) for XL,
+              cross-module/arch, or any security-sensitive diff
+Security gate → dev14 (opus) — reviews security-sensitive diffs at ANY size
 Pre-phase research  → dev11 (gemini)
 Post-phase memory   → dev10 (deepseek, always paired with ≥1 other dev)
 ```
+
+dev5 implements, dev14 reviews — the generator ≠ verifier split. dev14 is
+**review-only** (never edits the code under review) and runs after the
+implementer via the phase separator:
+`spawn-team.sh dev13:codex:T-100 -- dev14:opus:T-100-review`.
 
 ---
 
@@ -160,6 +169,7 @@ Note IDs: `A-NNN` / `F-NNN` / `X-NNN` / `B-NNN`. Filenames: `<id>-<slug>.md`.
 | dev2   | `architecture/`                           |
 | dev5   | `architecture/`, `fixes/`, `bugs/`        |
 | dev10  | `bugs/`, `fixes/`, `features/`            |
+| dev14  | `bugs/` (confirmed review/security findings) |
 | others | read-only                                 |
 
 ---
@@ -173,7 +183,7 @@ Note IDs: `A-NNN` / `F-NNN` / `X-NNN` / `B-NNN`. Filenames: `<id>-<slug>.md`.
 | `.claude/bin/_runner.sh`         | Shared runner sourced by all wrappers — logs every invocation |
 | `.claude/bin/run_codex.sh`       | Codex CLI wrapper (dev1/2/12/13)                              |
 | `.claude/bin/run_deepseek.sh`    | DeepSeek CLI wrapper (dev3/4/10)                              |
-| `.claude/bin/run_opus.sh`        | Claude Opus wrapper (dev5)                                    |
+| `.claude/bin/run_opus.sh`        | Claude Opus wrapper (dev5 implement, dev14 review)           |
 | `.claude/bin/run_haiku.sh`       | Claude Haiku wrapper (dev6/7)                                 |
 | `.claude/bin/run_sonnet.sh`      | Claude Sonnet wrapper (dev8/9)                                |
 | `.claude/bin/run_gemini.sh`      | Gemini CLI wrapper (dev11)                                    |
