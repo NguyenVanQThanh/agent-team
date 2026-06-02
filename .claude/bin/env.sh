@@ -2,7 +2,7 @@
 # Sourced automatically by team scripts (_runner.sh, spawn-team.sh, team-doctor.sh).
 # Edit values to fit your install; do NOT commit secrets here (commit safe).
 
-# ---- Opus backing for dev5 ----
+# ---- Opus backing for dev5 (implementer) + dev14 (reviewer/security gate) ----
 # Use Claude Code as the Opus engine (most users won't have a standalone `opus`).
 # Set to a different binary if you have one.
 : "${OPUS_BIN:=claude --model opus}"
@@ -69,5 +69,6 @@ declare -A DEV_SIZES=(
   [dev8]="L"       [dev9]="L"
   [dev10]="M"      [dev11]="M"
   [dev12]="S M"    [dev13]="L XL"
+  [dev14]="L XL"
 )
 export DEV_SIZES
