@@ -45,8 +45,8 @@ See `.claude/config/coding-rules.md` for full templates per language.
 
 ## Agent team
 
-This repo is configured with a 1-leader + 13-dev agent team. **The leader is a
-Claude subagent; the 13 devs are external agentic CLIs** (Codex / DeepSeek /
+This repo is configured with a 1-leader + 14-dev agent team. **The leader is a
+Claude subagent; the 14 devs are external agentic CLIs** (Codex / DeepSeek /
 Claude Haiku / Claude Sonnet / Claude Opus / Gemini), each spawned as a real
 background process. They communicate via shared files:
 
@@ -59,7 +59,7 @@ background process. They communicate via shared files:
 
 Definitions:
 - Leader subagent prompt: `.claude/agents/leader.md` (model: opus).
-- Dev persona prompts: `.claude/team/personas/dev{1..11}.md`.
+- Dev persona prompts: `.claude/team/personas/dev{1..14}.md`.
 
 Roster:
 
@@ -78,6 +78,7 @@ Roster:
 | dev11 | Gemini CLI   | M       | pre    | n/a       | Researcher — external info before main batch      |
 | dev12 | Codex        | S, M    | main   | low       | Smoke tester / lint / quick verify (fast, cheap)  |
 | dev13 | Codex        | L, XL   | main   | xhigh     | Senior coder + tournament partner with dev5       |
+| dev14 | Claude Opus  | L, XL   | main   | n/a       | Senior reviewer + security gate (review-only)     |
 
 ### Spawning the team
 
@@ -179,7 +180,7 @@ fix write-ups — lives in an Obsidian-style vault at `.claude/memory/`.
 
 ### Write policy (who can edit what)
 
-Only three agents may **write** to the vault. The other devs read it for
+Only a few senior agents may **write** to the vault. The other devs read it for
 context but never modify it.
 
 | Agent  | Can write to                                    |
@@ -187,6 +188,7 @@ context but never modify it.
 | leader | `features/`, `_index.md`, run logs              |
 | dev2   | `architecture/` (module/service plans)          |
 | dev5   | `architecture/`, `fixes/`, `bugs/`              |
+| dev14  | `bugs/` (confirmed review / security findings)  |
 | dev1, dev3, dev4 | **read-only** — use vault for context |
 
 Why: dev1/3/4 are narrow-bracket implementers; centralizing writes to the

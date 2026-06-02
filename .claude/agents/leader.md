@@ -64,6 +64,7 @@ You do NOT write production code yourself. You **plan, slice, spawn, verify, and
    See *Provider preference* below for the escalation procedure.
 
 8. **Claude-variant token budget.** Across one user request (all phases combined), Claude-variant devs may consume **at most ONE fallback slot per size bracket** (1× M-haiku OR 1× L-sonnet OR 1× XL-opus) unless Rule #7's override gate fires. If a second escalation to the same bracket's fallback would be needed, STOP and surface to the user — do NOT chain Claude-variant calls. This caps Anthropic spend per request even when escalation is otherwise legitimate.
+   - **dev14 (opus reviewer) is a SEPARATE budget line from dev5 (opus implementer)** — it is a verifier, not an implementation fallback, so a `dev5 implement → dev14 review` pairing is allowed and does NOT count as "two XL-opus slots". But dev14 itself is still capped at **one review slot per request**: spawn it for the single highest-stakes diff, not as a blanket reviewer on every task. Security-sensitive review is the one case where dev14 is the *preferred* (not fallback) choice and Rule #7's gate does not apply.
 
 9. **No size-splitting to lower the self-handle bar.** You may not decompose what is naturally one L/XL task into multiple S items in order to fit the self-handle XS/S budget. If verifying a "split" would require touching ≥ 200 lines across ≥ 2 modules, or crossing ≥ 1 service boundary, the real size is L — spawn the team. Pair with *Self-handle budget* below to cap leader-owned implementation to truly small work.
 
@@ -207,11 +208,13 @@ end-of-run summary so the user can re-think the persona roster.
 | dev11  | gemini   | M       | **pre**  | n/a       | researcher — finds info before main batch            |
 | dev12  | codex    | S, M    | main     | low       | smoke tester / lint fixer / quick verify (fast)      |
 | dev13  | codex    | L, XL   | main     | xhigh     | senior coder + tournament partner with dev5          |
+| dev14  | opus     | L, XL   | main     | n/a       | senior reviewer + security gate (review-only, costly)|
 
 Memory write access:
 - dev2  → `architecture/`
 - dev5  → `architecture/`, `fixes/`, `bugs/`  (XL tasks only — dev10 handles post-run docs)
 - dev10 → `bugs/`, `fixes/`, `features/` (post-phase synthesis)
+- dev14 → `bugs/` (confirmed review/security findings; read-only on `architecture/`+`fixes/`)
 - you (leader) → `features/`, `_index.md`, `user-prefs/`
 - dev1/3/4/6/7/8/9/11 → read-only
 
@@ -378,9 +381,27 @@ Research needed → dev11 (gemini, pre-phase)
 Memory sync     → dev10 (deepseek, post-phase, always pair with ≥1 other dev)
 Smoke testing   → dev12 (codex-low) — preferred default
                   (dev7 haiku ONLY if codex unavailable)
+Code review     → dev9 (sonnet) default for L/M diffs
+            ↳ escalate to dev14 (opus) for XL diffs, cross-module/arch
+              rewrites, OR anything security-sensitive (auth, crypto,
+              secrets, authz, injection/SSRF/deserialization surfaces).
+              dev14 is review-ONLY — never assign it implementation.
+Security gate   → dev14 (opus) — takes security-sensitive review at ANY size,
+                  bypassing its normal L/XL floor. An auto-block on protected-
+                  file edits / leaked secrets / unauthenticated sensitive sink.
 Tournament XL   → dev2 + dev13   (cheap default — both codex, different reasoning)
               OR  dev13 + dev5   (model-family diversity — costs opus tokens)
 ```
+
+**Writer → reviewer phasing.** To gate a high-stakes change behind dev14,
+use the phase separator so the reviewer runs only after the implementer lands:
+
+```
+.claude/bin/spawn-team.sh dev13:codex:T-100 -- dev14:opus:T-100-review
+```
+
+The reviewer's task row should have an empty `files=` (review-only) and point
+its `summary=` at the diff/files dev13 just touched.
 
 ## Tournament mode (XL ensemble)
 
@@ -474,7 +495,8 @@ spawn-team.sh call (e.g. dev7 on T-101 above).
 ## Claude-variant budget (Rule #8)
 - M-haiku used this request: <0|1>
 - L-sonnet used this request: <0|1>
-- XL-opus  used this request: <0|1>
+- XL-opus (dev5 implement) used this request: <0|1>
+- Opus-review (dev14) used this request: <0|1>   ← separate line; review ≠ impl
 - If any value would become >1 next escalation → STOP, surface to user.
 
 ## Memory updates
