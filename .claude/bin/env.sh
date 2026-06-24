@@ -2,6 +2,41 @@
 # Sourced automatically by team scripts (_runner.sh, spawn-team.sh, team-doctor.sh).
 # Edit values to fit your install; do NOT commit secrets here (commit safe).
 
+# ---- 9router gateway (OPTIONAL) -------------------------------------------
+# Khi USE_9ROUTER=1, mọi CLI con trỏ base-url về 9router proxy thay vì gọi
+# thẳng provider. Lợi ích: RTK -20..40% token + fallback tầng khi hết quota.
+# Mặc định USE_9ROUTER=0 → hành vi y hệt trước (không cần 9router cài sẵn).
+#
+# Kill switch: đặt USE_9ROUTER=0 (hoặc bỏ export) để quay lại gọi thẳng.
+# Key: để ở .claude/bin/env.local.sh (gitignored), KHÔNG commit vào đây.
+# Gemini (dev11) KHÔNG route qua 9router (rủi ro ban account free-tier).
+#
+# Dùng 127.0.0.1, KHÔNG dùng localhost (tránh lỗi resolve IPv6 trên một số OS).
+: "${USE_9ROUTER:=0}"
+: "${NINEROUTER_HOST:=http://127.0.0.1:20128}"
+: "${NINEROUTER_KEY:=}"
+
+if [ "${USE_9ROUTER:-0}" = "1" ]; then
+  # Claude variants (dev5/6/7/8/9/14)
+  : "${ANTHROPIC_BASE_URL:=$NINEROUTER_HOST/v1}"
+  : "${ANTHROPIC_API_KEY:=$NINEROUTER_KEY}"
+  # Codex / OpenAI (dev1/2/12/13)
+  : "${OPENAI_BASE_URL:=$NINEROUTER_HOST/v1}"
+  : "${OPENAI_API_KEY:=$NINEROUTER_KEY}"
+  # DeepSeek OpenAI-compatible (dev3/4/10) — tên biến theo CLI version bạn dùng
+  : "${DEEPSEEK_BASE_URL:=$NINEROUTER_HOST/v1}"
+  : "${DEEPSEEK_API_KEY:=$NINEROUTER_KEY}"
+  export ANTHROPIC_BASE_URL ANTHROPIC_API_KEY \
+         OPENAI_BASE_URL    OPENAI_API_KEY    \
+         DEEPSEEK_BASE_URL  DEEPSEEK_API_KEY
+fi
+# ---------------------------------------------------------------------------
+
+# Source machine-local overrides (secrets, USE_9ROUTER, NINEROUTER_KEY…).
+# File gitignored — tạo lần đầu: cp .claude/bin/env.local.sh.example .claude/bin/env.local.sh
+_local_env="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )/env.local.sh"
+[ -f "$_local_env" ] && source "$_local_env"
+
 # ---- Opus backing for dev5 (implementer) + dev14 (reviewer/security gate) ----
 # Use Claude Code as the Opus engine (most users won't have a standalone `opus`).
 # Set to a different binary if you have one.

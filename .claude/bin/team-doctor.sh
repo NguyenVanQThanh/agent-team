@@ -70,8 +70,21 @@ for d in .claude/team/personas .claude/team/status .claude/team/runs \
   fi
 done
 
+# 9router health-check (chỉ khi USE_9ROUTER=1)
+if [ "${USE_9ROUTER:-0}" = "1" ]; then
+  header "9router gateway"
+  _nr_host="${NINEROUTER_HOST:-http://127.0.0.1:20128}"
+  if curl -fsS "$_nr_host/v1/models" >/dev/null 2>&1; then
+    ok "9router reachable at $_nr_host"
+    [[ -z "${NINEROUTER_KEY:-}" ]] && warn "NINEROUTER_KEY chưa set (đặt ở env.local.sh)"
+  else
+    bad "9router BẬT (USE_9ROUTER=1) nhưng không gọi được $_nr_host"
+    note "Khởi động 9router trước, hoặc đặt USE_9ROUTER=0 để bỏ qua proxy"
+  fi
+fi
+
 # Personas
-for p in dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13; do
+for p in dev1 dev2 dev3 dev4 dev5 dev6 dev7 dev8 dev9 dev10 dev11 dev12 dev13 dev14; do
   if [[ -f "$REPO/.claude/team/personas/$p.md" ]]; then
     ok "persona: $p"
   else

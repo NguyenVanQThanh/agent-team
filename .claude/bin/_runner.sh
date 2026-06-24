@@ -13,6 +13,9 @@ unset CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAG
       DEEPSEEK_FLAGS OPUS_FLAGS OPUS_BIN \
       HAIKU_FLAGS HAIKU_BIN SONNET_FLAGS SONNET_BIN \
       GEMINI_FLAGS GEMINI_BIN 2>/dev/null || true
+# NOTE: *_BASE_URL và *_API_KEY cố ý KHÔNG nằm trong danh sách unset trên.
+# Khi USE_9ROUTER=1, env.sh export ANTHROPIC_BASE_URL / OPENAI_BASE_URL /
+# DEEPSEEK_BASE_URL → chúng sẽ truyền xuống CLI con. Đừng thêm vào unset.
 # Source local env (OPUS_BIN, *_FLAGS, etc.) if present.
 _env_file="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )/env.sh"
 [[ -f "$_env_file" ]] && source "$_env_file"
@@ -140,6 +143,22 @@ runner_exec() {
     fi
   fi
 
+  # Per-dev 9router key — token metering per dev (plan-token-metering-9router).
+  # Khi USE_9ROUTER=1, mỗi dev dùng key riêng (NINEROUTER_KEY_DEV1…DEV14) để
+  # dashboard 9router group theo keyName = tách token theo dev, không cần code đo.
+  # Fallback về NINEROUTER_KEY (shared) nếu dev chưa có key riêng.
+  # Gemini (dev11) không route qua 9router — khối này vô hại vì GEMINI_* không bị ghi đè.
+  if [[ "${USE_9ROUTER:-0}" = "1" && "$dev" != "unknown" ]]; then
+    local _dev_up _kvar _dev_key _nr_host
+    _dev_up="$(printf '%s' "$dev" | tr '[:lower:]' '[:upper:]')"   # DEV1
+    _kvar="NINEROUTER_KEY_${_dev_up}"                               # NINEROUTER_KEY_DEV1
+    _dev_key="${!_kvar:-${NINEROUTER_KEY:-}}"
+    _nr_host="${NINEROUTER_HOST:-http://127.0.0.1:20128}"
+    export ANTHROPIC_BASE_URL="$_nr_host/v1"  ANTHROPIC_API_KEY="$_dev_key"
+    export OPENAI_BASE_URL="$_nr_host/v1"     OPENAI_API_KEY="$_dev_key"
+    export DEEPSEEK_BASE_URL="$_nr_host/v1"   DEEPSEEK_API_KEY="$_dev_key"
+  fi
+
   local first_word="${bin_spec%% *}"
   if ! command -v "$first_word" >/dev/null 2>&1; then
     echo "error: '$first_word' (from bin='$bin_spec') not on PATH" >&2
@@ -169,6 +188,18 @@ runner_exec() {
     task_id=$(grep -E '^id=' "$task_file" | head -1 | cut -d= -f2- | tr -d '\r')
     task_spec_block=$(printf '\n----\n\n## Your task this run (pool mode)\n\nYou were claimed for the task spec below. The full spec lives at:\n  %s\n\n```env\n%s\n```\n\nWhen finished, you (or your runner) MUST call:\n  .claude/bin/complete-task.sh %s %s done|failed "<notes>"\n\n----\n\n' \
       "$task_file" "$(cat "$task_file")" "$dev" "$task_id")
+  fi
+
+  # x-task-id header injection — hybrid strategy (plan-token-metering-9router §3.2)
+  # Claude Code (dev5/6/7/8/9/14): ANTHROPIC_CUSTOM_HEADERS forward header tới provider.
+  # Codex (dev1/2/12/13): env_http_headers trong config.toml đọc CODEX_TASK_ID.
+  # DeepSeek (dev3/4/10): không hỗ trợ inject header → dùng join theo thời gian (§3.1).
+  # Gemini (dev11): không route qua 9router → bỏ qua.
+  # ⚠️  Xác minh header xuất hiện trong 9router → Request Details trước khi tin số liệu.
+  if [[ "${USE_9ROUTER:-0}" = "1" ]]; then
+    local _tid="${task_id:-none}"
+    export ANTHROPIC_CUSTOM_HEADERS="x-task-id: ${_tid}"
+    export CODEX_TASK_ID="${_tid}"
   fi
 
   # Capture start epoch BEFORE invoking the CLI so completion validation
