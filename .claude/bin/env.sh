@@ -66,20 +66,10 @@ export CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLA
 export DEEPSEEK_FLAGS
 export HAIKU_BIN HAIKU_FLAGS SONNET_BIN SONNET_FLAGS GEMINI_BIN GEMINI_FLAGS
 
-# ---- Local tool bins: RTK (tier-0 output compression) + Headroom (tier-1) ----
-# Make the two token-compression tools visible to every team CLI regardless of
-# the inherited PATH. Portable: no machine-specific paths are hardcoded, so this
-# stays commit-safe.
-#   - rtk.exe is installed to ~/.local/bin (see README "Token compression").
-#   - Headroom's `headroom` console script lives in Python's Scripts dir; resolve
-#     it dynamically so it works across machines / Python versions.
+# ---- Local tool bin: RTK (tier-0 command-output compression) ----
+# Make rtk visible to every team CLI regardless of the inherited PATH.
+# rtk.exe is installed to ~/.local/bin (see README "Command-Output Compression").
 export PATH="$HOME/.local/bin:$PATH"
-if command -v py >/dev/null 2>&1; then
-  _hr_scripts="$(py -c 'import sysconfig; print(sysconfig.get_path("scripts"))' 2>/dev/null)"
-  command -v cygpath >/dev/null 2>&1 && _hr_scripts="$(cygpath -u "$_hr_scripts" 2>/dev/null)"
-  [ -n "$_hr_scripts" ] && export PATH="$PATH:$_hr_scripts"
-  unset _hr_scripts
-fi
 
 # ---- Per-dev size brackets (used by claim-task.sh in pool mode) ----
 # Each dev only claims tasks whose size= matches one of its bracket sizes.

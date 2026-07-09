@@ -8,6 +8,25 @@
 
 ---
 
+## ⚑ Trạng thái triển khai — cập nhật 2026-07-09
+
+> Cập nhật sau khi verify thực tế trên môi trường Windows của dự án. Bản thiết kế
+> gốc (các mục bên dưới) giữ lại làm hồ sơ; bảng này là **quyết định cuối**.
+
+| Tầng | Thành phần | Quyết định | Lý do (đã verify) |
+|---|---|---|---|
+| 0 | **RTK** | ✅ **ADOPTED** | Nén ~32% mẫu kênh lệnh shell. Hook đã cài: Claude Code (global), Codex (AGENTS.md/RTK.md — instruction), Gemini (global). Rủi ro thấp. |
+| 1 | **Headroom** | ❌ **REJECTED — đã gỡ** | `learn` chết trên Windows (npm shim + litellm parse). `proxy` chạy được với subscription **nhưng nén 0%** vì Claude Code prompt-cache đóng băng prefix (`prefix_frozen`) — Headroom cố ý không đụng cache. Giá trị ~0 + rủi ro proxy-in-path (cùng loại 9router đã revert). |
+| 2 | **agent-team** | ✅ giữ nguyên | Tầng điều phối chính, không đổi. |
+| 3 | **Superpowers** | 🚧 **IN PROGRESS** | Cài qua `/plugin install`. **Phải tắt** `subagent-driven-development` + `dispatching-parallel-agents` (đá nhau với leader) — cơ chế disable đang xác minh. |
+
+**Bài học then chốt (để người sau khỏi thử lại):**
+- Headroom `proxy` **không** nén được kênh Read của Claude Code: prompt caching của Claude đã ăn phần lợi đó; con số "opportunity" từ `audit-reads` là byte thô, không hiện thực hóa qua proxy.
+- Headroom `learn` cần LLM backend; trên Windows binary `claude` là npm shim → subprocess không chạy được, và litelln/deepseek trả JSON lỗi.
+- ⇒ RTK (kênh Bash) là thắng lợi thật duy nhất ở 2 tầng nén. Headroom đã gỡ khỏi `env.sh`, `team-doctor.sh`, `README.md`.
+
+---
+
 ## 0. Repo tham chiếu
 
 | Thành phần | Repo / Link | Vai trò | Tầng |
