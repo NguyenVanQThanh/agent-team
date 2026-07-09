@@ -193,6 +193,61 @@ Note IDs: `A-NNN` / `F-NNN` / `X-NNN` / `B-NNN`. Filenames: `<id>-<slug>.md`.
 
 ---
 
+## Token Compression (RTK + Headroom) — optional
+
+Two independent layers cut token usage (see [ARCHITECTURE (1).md](ARCHITECTURE%20(1).md), tiers 0–1). They are **optional** — the team runs fine without them.
+
+- **RTK** (tier 0) — compresses shell-command output *at the source* (`git status`, `cargo test`, …) before it enters context. Rust binary, hooks into each CLI.
+- **Headroom** (tier 1) — compresses the assembled API payload (history, RAG, files) and provides Failure Learning that writes lessons into `CLAUDE.md` / `AGENTS.md` / `GEMINI.md`.
+
+### Install (Windows)
+
+```bash
+# Headroom — native via pip (use `py -m pip` if `pip` isn't on PATH)
+py -m pip install "headroom-ai[all]"
+
+# RTK — download the prebuilt Windows binary (no Rust needed) into ~/.local/bin
+mkdir -p ~/.local/bin
+curl -sL -o /tmp/rtk.zip \
+  https://github.com/rtk-ai/rtk/releases/download/v0.43.0/rtk-x86_64-pc-windows-msvc.zip
+unzip -o /tmp/rtk.zip -d ~/.local/bin      # extracts rtk.exe
+# verify the download against the release checksums.txt before first run
+```
+
+`.claude/bin/env.sh` already prepends `~/.local/bin` and Python's Scripts dir to
+`PATH`, so team CLIs find `rtk` / `headroom` automatically once installed. For
+interactive (PowerShell) use, add the same dirs to your user PATH:
+
+```powershell
+$p = [Environment]::GetEnvironmentVariable("Path","User")
+$p += ";$HOME\.local\bin;$env:LOCALAPPDATA\Programs\Python\Python313\Scripts"
+[Environment]::SetEnvironmentVariable("Path", $p, "User")
+```
+
+### Enable
+
+```bash
+rtk --version && headroom --version   # confirm both resolve
+rtk init -g --codex --gemini          # install output-rewrite hooks per CLI
+```
+
+> ⚠️ **Not yet verified in this repo** (see ARCHITECTURE §5): whether Headroom's
+> `proxy` mode carries SharedContext / Persistent Memory, and whether DeepSeek /
+> Gemini honor a `*_BASE_URL` override. Verify with the checklist before routing
+> traffic through `headroom proxy`. The safe, proven use is Failure Learning via
+> CLI: `headroom learn --project . --apply` (writes only between the
+> `<!-- headroom:learn:start/end -->` markers).
+
+### Health check
+
+```bash
+rtk gain            # tokens saved at the command-output layer
+headroom doctor     # verify Headroom install + config
+headroom dashboard  # tokens saved at the payload layer, per dev
+```
+
+---
+
 ## Setup
 
 **1. Verify everything is in place:**

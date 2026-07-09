@@ -2,6 +2,14 @@
 # Sourced automatically by team scripts (_runner.sh, spawn-team.sh, team-doctor.sh).
 # Edit values to fit your install; do NOT commit secrets here (commit safe).
 
+# ---- Per-machine secrets / overrides (gitignored, NOT committed) ----
+# Put real API keys (e.g. DEEPSEEK_API_KEY) and any local overrides in
+# env.local.sh next to this file. It is sourced FIRST so its values win over
+# the `: "${VAR:=default}"` fallbacks below. See env.local.sh.example.
+_env_dir="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+[ -f "$_env_dir/env.local.sh" ] && . "$_env_dir/env.local.sh"
+unset _env_dir
+
 # ---- Opus backing for dev5 (implementer) + dev14 (reviewer/security gate) ----
 # Use Claude Code as the Opus engine (most users won't have a standalone `opus`).
 # Set to a different binary if you have one.
@@ -57,6 +65,21 @@ export OPUS_BIN OPUS_FLAGS
 export CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13
 export DEEPSEEK_FLAGS
 export HAIKU_BIN HAIKU_FLAGS SONNET_BIN SONNET_FLAGS GEMINI_BIN GEMINI_FLAGS
+
+# ---- Local tool bins: RTK (tier-0 output compression) + Headroom (tier-1) ----
+# Make the two token-compression tools visible to every team CLI regardless of
+# the inherited PATH. Portable: no machine-specific paths are hardcoded, so this
+# stays commit-safe.
+#   - rtk.exe is installed to ~/.local/bin (see README "Token compression").
+#   - Headroom's `headroom` console script lives in Python's Scripts dir; resolve
+#     it dynamically so it works across machines / Python versions.
+export PATH="$HOME/.local/bin:$PATH"
+if command -v py >/dev/null 2>&1; then
+  _hr_scripts="$(py -c 'import sysconfig; print(sysconfig.get_path("scripts"))' 2>/dev/null)"
+  command -v cygpath >/dev/null 2>&1 && _hr_scripts="$(cygpath -u "$_hr_scripts" 2>/dev/null)"
+  [ -n "$_hr_scripts" ] && export PATH="$PATH:$_hr_scripts"
+  unset _hr_scripts
+fi
 
 # ---- Per-dev size brackets (used by claim-task.sh in pool mode) ----
 # Each dev only claims tasks whose size= matches one of its bracket sizes.

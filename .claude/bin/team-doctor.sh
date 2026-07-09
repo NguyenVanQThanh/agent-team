@@ -125,6 +125,31 @@ else
   note "install: npm i -g @google/gemini-cli"
 fi
 
+# ------- token-compression tools (optional: RTK + Headroom) -------
+
+header "Token compression tools (optional)"
+
+# RTK — tier-0 command-output compression.
+if command -v rtk >/dev/null 2>&1; then
+  v="$(rtk --version 2>&1 | head -1 | tr -d '\r')" || v="?"
+  ok "RTK        (tier-0 output compression)  rtk found  ${BLUE}[${v}]${NC}"
+  # Hook status is normally checked via `rtk init`, but we must not execute
+  # rtk beyond --version here, so just point at the setup command.
+  note "hooks not verified (avoiding live rtk invocation) — run: rtk init -g --codex --gemini"
+else
+  warn "RTK        (tier-0 output compression)  rtk NOT on PATH (optional)"
+  note "install per README \"Token Compression\" section, then: rtk init -g --codex --gemini"
+fi
+
+# Headroom — tier-1 payload compression + Failure Learning.
+if command -v headroom >/dev/null 2>&1; then
+  v="$(headroom --version 2>&1 | head -1 | tr -d '\r')" || v="?"
+  ok "Headroom   (tier-1 payload compression)  headroom found  ${BLUE}[${v}]${NC}"
+else
+  warn "Headroom   (tier-1 payload compression)  headroom NOT on PATH (optional)"
+  note "install per README \"Token Compression\" section"
+fi
+
 # ------- Codex per-dev reasoning flags -------
 
 header "Codex per-dev reasoning flags (env.sh)"
