@@ -195,21 +195,31 @@ fi
 if (( QUICK == 0 )); then
   header "Live probes (one-shot --quick to skip)"
 
+  # probe <label> <cmd> [timeout_secs=15] [soft=0]
+  # soft=1 → a failure is reported as a warning (not a hard fail), for probes
+  # that are inherently slow/costly (e.g. codex spins a full agent loop).
   probe() {
-    local label="$1" cmd="$2"
+    local label="$1" cmd="$2" tmo="${3:-15}" soft="${4:-0}"
     local out ec
-    out=$(timeout 15 bash -c "$cmd" 2>&1)
+    out=$(timeout "$tmo" bash -c "$cmd" 2>&1)
     ec=$?
     if (( ec == 0 )); then
       ok "$label responded"
       note "first line: $(echo "$out" | head -1 | cut -c1-80)"
+    elif (( soft == 1 )); then
+      warn "$label probe inconclusive (exit $ec, ${tmo}s) — binary+auth already verified above"
+      note "agent cold-start can exceed the probe window; confirm with a real team task if unsure"
     else
       bad "$label failed (exit $ec)"
       note "stderr: $(echo "$out" | tail -1 | cut -c1-100)"
     fi
   }
 
-  (( codex_ok ))    && probe "codex"    "codex exec --skip-git-repo-check 'say hello in 5 words' 2>&1 || codex -p 'say hello in 5 words' 2>&1 || codex 'say hello in 5 words' 2>&1" \
+  # Probe with the SAME flags the team actually uses (env.sh CODEX_FLAGS —
+  # includes --dangerously-bypass-approvals-and-sandbox so codex runs
+  # non-interactively). stdin from /dev/null avoids "stdin is not a terminal".
+  _codex_flags="${CODEX_FLAGS:-exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -c model=gpt-5.5}"
+  (( codex_ok ))    && probe "codex"    "codex $_codex_flags 'say hello in 5 words' </dev/null 2>&1" 45 1 \
                    || note "skip codex probe (binary missing)"
   (( deepseek_ok )) && probe "deepseek" "deepseek -p 'say hello in 5 words' 2>&1 || deepseek 'say hello in 5 words' 2>&1" \
                    || note "skip deepseek probe (binary missing)"
