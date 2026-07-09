@@ -30,9 +30,6 @@
 node_modules/
 *.log
 
-# 9router local secrets (USE_9ROUTER, NINEROUTER_KEY…) — không commit
-.claude/bin/env.local.sh
-
 # Task queue — per-run artifacts (skeleton dirs + README only tracked)
 .claude/team/queue/pending/*
 .claude/team/queue/claimed/*
