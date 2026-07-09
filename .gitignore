@@ -19,6 +19,9 @@
 .claude/.cache/
 .claude/projects/
 
+# Per-machine secrets sourced by env.sh (API keys, local overrides) — never commit
+.claude/bin/env.local.sh
+
 # User preferences — personal, never commit
 .claude/memory/user-prefs/*
 !.claude/memory/user-prefs/.gitkeep

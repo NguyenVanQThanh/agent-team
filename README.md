@@ -193,6 +193,73 @@ Note IDs: `A-NNN` / `F-NNN` / `X-NNN` / `B-NNN`. Filenames: `<id>-<slug>.md`.
 
 ---
 
+## Command-Output Compression (RTK) — optional
+
+RTK (tier 0, see [ARCHITECTURE (1).md](ARCHITECTURE%20(1).md)) compresses
+shell-command output *at the source* (`git status`, `cargo test`, …) before it
+enters context. Rust binary, hooks into each CLI. It's **optional** — the team
+runs fine without it.
+
+### Install (Windows)
+
+```bash
+# RTK — download the prebuilt Windows binary (no Rust needed) into ~/.local/bin
+mkdir -p ~/.local/bin
+curl -sL -o /tmp/rtk.zip \
+  https://github.com/rtk-ai/rtk/releases/download/v0.43.0/rtk-x86_64-pc-windows-msvc.zip
+unzip -o /tmp/rtk.zip -d ~/.local/bin      # extracts rtk.exe
+# verify the download against the release checksums.txt before first run
+```
+
+`.claude/bin/env.sh` already prepends `~/.local/bin` to `PATH`, so team CLIs
+find `rtk` automatically once installed. For interactive (PowerShell) use, add
+the same dir to your user PATH:
+
+```powershell
+$p = [Environment]::GetEnvironmentVariable("Path","User")
+$p += ";$HOME\.local\bin"
+[Environment]::SetEnvironmentVariable("Path", $p, "User")
+```
+
+### Enable
+
+```bash
+rtk --version               # confirm it resolves
+rtk init -g                 # install Claude Code global hook
+rtk init --codex             # writes AGENTS.md
+rtk init -g --gemini         # install Gemini hook
+```
+
+### Health check
+
+```bash
+rtk gain            # tokens saved at the command-output layer
+```
+
+---
+
+## Methodology Skills (Superpowers subset — vendored)
+
+A curated subset of [obra/superpowers](https://github.com/obra/superpowers) (MIT)
+is **vendored** into [`.claude/skills/`](.claude/skills/) — committed to the repo,
+so the leader and Claude/Codex devs get a consistent brainstorm → plan → TDD →
+debug → review methodology without a global plugin install.
+
+**Included (6):** `brainstorming`, `writing-plans`, `test-driven-development`,
+`systematic-debugging`, `requesting-code-review`, `verification-before-completion`.
+
+**Deliberately excluded:** `subagent-driven-development` and
+`dispatching-parallel-agents` — they conflict with the leader, which is the single
+orchestration layer. Claude Code can't disable individual plugin skills, so we
+vendor only what we want rather than installing the whole plugin. `writing-plans`
+is locally patched to hand execution to the leader (`spawn-team.sh`), not to
+self-dispatch subagents. Details + attribution: [`.claude/skills/VENDORED.md`](.claude/skills/VENDORED.md).
+
+> DeepSeek / Gemini devs don't consume `.claude/skills/` — this methodology layer
+> applies to the leader and Claude/Codex devs.
+
+---
+
 ## Setup
 
 **1. Verify everything is in place:**
