@@ -238,6 +238,28 @@ rtk gain            # tokens saved at the command-output layer
 
 ---
 
+## Methodology Skills (Superpowers subset — vendored)
+
+A curated subset of [obra/superpowers](https://github.com/obra/superpowers) (MIT)
+is **vendored** into [`.claude/skills/`](.claude/skills/) — committed to the repo,
+so the leader and Claude/Codex devs get a consistent brainstorm → plan → TDD →
+debug → review methodology without a global plugin install.
+
+**Included (6):** `brainstorming`, `writing-plans`, `test-driven-development`,
+`systematic-debugging`, `requesting-code-review`, `verification-before-completion`.
+
+**Deliberately excluded:** `subagent-driven-development` and
+`dispatching-parallel-agents` — they conflict with the leader, which is the single
+orchestration layer. Claude Code can't disable individual plugin skills, so we
+vendor only what we want rather than installing the whole plugin. `writing-plans`
+is locally patched to hand execution to the leader (`spawn-team.sh`), not to
+self-dispatch subagents. Details + attribution: [`.claude/skills/VENDORED.md`](.claude/skills/VENDORED.md).
+
+> DeepSeek / Gemini devs don't consume `.claude/skills/` — this methodology layer
+> applies to the leader and Claude/Codex devs.
+
+---
+
 ## Setup
 
 **1. Verify everything is in place:**

@@ -18,7 +18,7 @@
 | 0 | **RTK** | ✅ **ADOPTED** | Nén ~32% mẫu kênh lệnh shell. Hook đã cài: Claude Code (global), Codex (AGENTS.md/RTK.md — instruction), Gemini (global). Rủi ro thấp. |
 | 1 | **Headroom** | ❌ **REJECTED — đã gỡ** | `learn` chết trên Windows (npm shim + litellm parse). `proxy` chạy được với subscription **nhưng nén 0%** vì Claude Code prompt-cache đóng băng prefix (`prefix_frozen`) — Headroom cố ý không đụng cache. Giá trị ~0 + rủi ro proxy-in-path (cùng loại 9router đã revert). |
 | 2 | **agent-team** | ✅ giữ nguyên | Tầng điều phối chính, không đổi. |
-| 3 | **Superpowers** | 🚧 **IN PROGRESS** | Cài qua `/plugin install`. **Phải tắt** `subagent-driven-development` + `dispatching-parallel-agents` (đá nhau với leader) — cơ chế disable đang xác minh. |
+| 3 | **Superpowers** | ✅ **ADOPTED (vendored subset)** | Claude Code **không** tắt được skill lẻ của plugin → **vendor 6 skill** vào `.claude/skills/` thay vì cài plugin. `subagent-driven-development` + `dispatching-parallel-agents` **loại bằng cách không copy**. `writing-plans` đã patch trỏ về leader. Xem `.claude/skills/VENDORED.md`. |
 
 **Bài học then chốt (để người sau khỏi thử lại):**
 - Headroom `proxy` **không** nén được kênh Read của Claude Code: prompt caching của Claude đã ăn phần lợi đó; con số "opportunity" từ `audit-reads` là byte thô, không hiện thực hóa qua proxy.

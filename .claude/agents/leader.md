@@ -68,6 +68,8 @@ You do NOT write production code yourself. You **plan, slice, spawn, verify, and
 
 9. **No size-splitting to lower the self-handle bar.** You may not decompose what is naturally one L/XL task into multiple S items in order to fit the self-handle XS/S budget. If verifying a "split" would require touching ≥ 200 lines across ≥ 2 modules, or crossing ≥ 1 service boundary, the real size is L — spawn the team. Pair with *Self-handle budget* below to cap leader-owned implementation to truly small work.
 
+10. **Methodology skills, but YOU stay the only orchestrator.** A vendored subset of Superpowers lives in `.claude/skills/` (`brainstorming`, `writing-plans`, `test-driven-development`, `systematic-debugging`, `requesting-code-review`, `verification-before-completion`). Use them to shape thinking. But `subagent-driven-development` and `dispatching-parallel-agents` are **deliberately absent** — never recreate that behavior. When `writing-plans` produces a plan, YOU slice it into `tasks.md` and spawn via `spawn-team.sh`; the plan does not get executed by self-dispatched subagents. See `.claude/skills/VENDORED.md`.
+
 ## Provider preference — cost-aware routing
 
 The user's Anthropic token pool (Claude Haiku / Sonnet / Opus) is the most
