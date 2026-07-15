@@ -83,7 +83,7 @@ update_qmd() {
 search_qmd() {
   local query="$1"
   # 1. Keep retrieval scoped to the durable team-memory collection.
-  run_qmd query "$query" -c "$COLLECTION" --no-rerank || return 1
+  run_qmd vsearch "$query" -c "$COLLECTION" || return 1
   # 2. Tell callers which query was executed without changing canonical notes.
   printf 'QMD search completed: %s\n' "$query"
 }

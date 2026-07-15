@@ -57,7 +57,7 @@ assert_contains "$(<"$qmd_log")" "embed -c agent-team-memory" "bootstrap embeddi
 
 search_output="$(STUB_LOG="$qmd_log" QMD_BIN="$stub_qmd" "$TOOL" search "retry policy")"
 assert_contains "$search_output" "retry policy" "search output"
-assert_contains "$(<"$qmd_log")" "query retry policy -c agent-team-memory --no-rerank" "scoped query"
+assert_contains "$(<"$qmd_log")" "vsearch retry policy -c agent-team-memory" "scoped semantic search"
 
 fallback_output="$(QMD_BIN="$TMP_DIR/missing-qmd" "$TOOL" search "retry policy" 2>&1 || true)"
 assert_contains "$fallback_output" "fallback: rg -n --glob '*.md' -- retry policy .claude/memory" "missing QMD fallback"
