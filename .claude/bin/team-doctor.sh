@@ -87,9 +87,12 @@ check_cli() {
   local label="$1" bin="$2" version_flag="$3"
   if command -v "$bin" >/dev/null 2>&1; then
     local v
-    v="$($bin $version_flag 2>&1 | head -1 | tr -d '\r')" || v="(version check failed)"
-    ok "$label: ${bin} found  ${BLUE}[${v}]${NC}"
-    return 0
+    if v="$($bin $version_flag 2>&1 | head -1 | tr -d '\r')"; then
+      ok "$label: ${bin} found  ${BLUE}[${v}]${NC}"
+      return 0
+    fi
+    bad "$label: ${bin} found but version check failed"
+    return 1
   else
     bad "$label: ${bin} NOT on PATH"
     return 1

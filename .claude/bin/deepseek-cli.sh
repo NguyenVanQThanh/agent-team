@@ -10,18 +10,22 @@ deepseek_resolve_bin() {
     return 0
   fi
 
-  if command -v codewhale >/dev/null 2>&1; then
+  if command -v codewhale >/dev/null 2>&1 && deepseek_command_is_usable codewhale; then
     printf '%s\n' "codewhale"
     return 0
   fi
 
-  if command -v deepseek-tui >/dev/null 2>&1; then
+  if command -v deepseek-tui >/dev/null 2>&1 && deepseek_command_is_usable deepseek-tui; then
     printf '%s\n' "deepseek-tui"
     return 0
   fi
 
   echo "error: no DeepSeek CLI found; install codewhale or deepseek-tui, or set DEEPSEEK_BIN" >&2
   return 127
+}
+
+deepseek_command_is_usable() {
+  "$1" --version >/dev/null 2>&1
 }
 
 deepseek_cli_label() {
