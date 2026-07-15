@@ -36,7 +36,10 @@ _CODEX_BASE='exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandb
 : "${CODEX_FLAGS_DEV12:=$_CODEX_BASE -c model_reasoning_effort=\"low\"}"
 : "${CODEX_FLAGS_DEV13:=$_CODEX_BASE -c model_reasoning_effort=\"xhigh\"}"
 
-# ---- DeepSeek CLI / TUI (dev3, dev4, dev10) ----
+# ---- CodeWhale / DeepSeek TUI (dev3, dev4, dev10) ----
+# Empty DEEPSEEK_BIN enables automatic resolution: codewhale, then deepseek-tui.
+# Set DEEPSEEK_BIN locally to override the detected command, including its flags.
+: "${DEEPSEEK_BIN:=}"
 # `exec --auto` = agentic mode with write_file + exec_shell tools (v0.8.x+).
 : "${DEEPSEEK_FLAGS:=exec --auto}"
 
@@ -63,7 +66,7 @@ _CODEX_BASE='exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandb
 # Export so child processes (CLIs) see them.
 export OPUS_BIN OPUS_FLAGS
 export CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13
-export DEEPSEEK_FLAGS
+export DEEPSEEK_BIN DEEPSEEK_FLAGS
 export HAIKU_BIN HAIKU_FLAGS SONNET_BIN SONNET_FLAGS GEMINI_BIN GEMINI_FLAGS
 
 # ---- Local tool bin: RTK (tier-0 command-output compression) ----

@@ -16,6 +16,8 @@ _env_file="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )/env
 
 SCRIPT_DIR="$( cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd )"
 REPO="$( cd -- "$SCRIPT_DIR/../.." &>/dev/null && pwd )"
+# shellcheck source=./deepseek-cli.sh
+source "$SCRIPT_DIR/deepseek-cli.sh"
 QUICK=0
 [[ "${1:-}" == "--quick" ]] && QUICK=1
 
@@ -99,7 +101,16 @@ header "CLI binaries"
 codex_ok=0; deepseek_ok=0; opus_ok=0; haiku_ok=0; sonnet_ok=0; gemini_ok=0
 
 check_cli "Codex      (dev1/dev2)"      codex    --version 1 && codex_ok=1
-check_cli "DeepSeek   (dev3/dev4/dev10)" deepseek --version  && deepseek_ok=1
+if deepseek_bin="$(deepseek_resolve_bin)"; then
+  deepseek_first_word="${deepseek_bin%% *}"
+  deepseek_label="$(deepseek_cli_label "$deepseek_bin")"
+  check_cli "$deepseek_label (dev3/dev4/dev10)" "$deepseek_first_word" --version && deepseek_ok=1
+else
+  deepseek_bin=""
+  deepseek_label="CodeWhale / DeepSeek TUI"
+  bad "$deepseek_label (dev3/dev4/dev10) NOT on PATH"
+  note "install codewhale or deepseek-tui, or set DEEPSEEK_BIN"
+fi
 
 # claude binary covers opus (dev5) + haiku (dev6/dev7) + sonnet (dev8/dev9)
 if command -v claude >/dev/null 2>&1; then
@@ -167,7 +178,11 @@ elif [[ -f "$HOME/.deepseek/config.toml" ]] && grep -q "api_key" "$HOME/.deepsee
   ok "DeepSeek config at ~/.deepseek/config.toml has api_key"
 else
   warn "no DEEPSEEK_API_KEY and no api_key in ~/.deepseek/config.toml"
-  note "run:  deepseek-tui login    or    export DEEPSEEK_API_KEY=..."
+  if [[ -n "$deepseek_bin" ]]; then
+    note "run:  $deepseek_bin login    or    export DEEPSEEK_API_KEY=..."
+  else
+    note "install codewhale or deepseek-tui, then run its login command or export DEEPSEEK_API_KEY=..."
+  fi
 fi
 
 # Codex/OpenAI: OPENAI_API_KEY (Codex CLI uses this) or codex auth
@@ -221,8 +236,8 @@ if (( QUICK == 0 )); then
   _codex_flags="${CODEX_FLAGS:-exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -c model=gpt-5.5}"
   (( codex_ok ))    && probe "codex"    "codex $_codex_flags 'say hello in 5 words' </dev/null 2>&1" 45 1 \
                    || note "skip codex probe (binary missing)"
-  (( deepseek_ok )) && probe "deepseek" "deepseek -p 'say hello in 5 words' 2>&1 || deepseek 'say hello in 5 words' 2>&1" \
-                   || note "skip deepseek probe (binary missing)"
+  (( deepseek_ok )) && probe "$deepseek_label" "$deepseek_bin -p 'say hello in 5 words' 2>&1 || $deepseek_bin 'say hello in 5 words' 2>&1" \
+                   || note "skip $deepseek_label probe (binary missing)"
   (( opus_ok ))     && probe "opus"     "$OPUS_BIN -p 'say hello in 5 words' 2>&1" \
                    || note "skip opus probe (binary missing)"
 fi

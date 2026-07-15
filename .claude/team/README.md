@@ -95,7 +95,7 @@ The leader will plan and spawn. To watch CLIs live in a second terminal:
     _runner.sh                  # shared helper sourced by all run_*.sh wrappers
     env.sh                      # central config for all CLI binaries + flags
     run_codex.sh                # → invokes the real `codex` CLI
-    run_deepseek.sh             # → invokes the real `deepseek` CLI
+    run_deepseek.sh             # → invokes `codewhale`, with `deepseek-tui` fallback
     run_opus.sh                 # → invokes `claude --model opus`
     run_haiku.sh                # → invokes `claude --model haiku`
     run_sonnet.sh               # → invokes `claude --model sonnet`
@@ -178,8 +178,10 @@ Requires `bash` and (for best UX) `fzf`; falls back to numbered menus.
 
 ## Customising
 
-- CLI binaries / flags: edit `.claude/bin/env.sh` (`CODEX_FLAGS`, `DEEPSEEK_FLAGS`,
+- CLI binaries / flags: edit `.claude/bin/env.sh` (`CODEX_FLAGS`, `DEEPSEEK_BIN`, `DEEPSEEK_FLAGS`,
   `OPUS_BIN`, `HAIKU_BIN`, `SONNET_BIN`, `GEMINI_BIN`, and the per-dev overrides).
+  The DeepSeek runner automatically selects `codewhale` first, then legacy
+  `deepseek-tui`; set `DEEPSEEK_BIN` in `env.local.sh` to force a command.
 - Size routing: edit `.claude/agents/leader.md` routing table and the matching
   size bracket in each persona file.
 - Add a dev: add `devN.md` in `personas/`, add a `run_<cli>.sh` wrapper if the
