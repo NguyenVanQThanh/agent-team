@@ -48,6 +48,22 @@ dev10 (DeepSeek, post-phase) is the primary memory scribe after each main batch.
 dev5 (Opus) writes directly only on XL tasks where it authors the fix itself.
 dev14 (Opus reviewer) writes `bugs/` notes for findings it confirms during review.
 
+## Semantic retrieval (optional)
+
+QMD can build a machine-local semantic index for this vault without changing
+the Markdown notes. From the repository root:
+
+```bash
+.claude/bin/memory-tools.sh bootstrap
+.claude/bin/memory-tools.sh search "what did we decide about retries"
+```
+
+After dev10 or another authorised writer changes the vault, run
+`.claude/bin/memory-tools.sh update`. Search results point to canonical notes;
+read those notes before using their content. If QMD is unavailable, use the
+`rg` fallback printed by the command. `.claude/runtime/` is ignored and can be
+removed to reset the index.
+
 ## Per-section MOCs
 
 Each folder has a `_moc.md` that lists notes in that section. The writing dev

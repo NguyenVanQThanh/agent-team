@@ -1,0 +1,3 @@
+# Serena project policy: code intelligence only; canonical memory is .claude/memory/.
+added_modes:
+  - no-memories

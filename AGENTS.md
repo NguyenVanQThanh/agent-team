@@ -66,6 +66,25 @@ the user — there is no human in your loop.
   Read this before touching any source file.
 - The repo's own source code — edit freely within your task's scope.
 
+## Semantic memory and code intelligence
+
+`.claude/memory/` remains the only durable memory store. Before broad vault
+searches, use QMD when it is available:
+
+```bash
+.claude/bin/memory-tools.sh search "<question>"
+```
+
+Read the returned canonical Markdown note before relying on it. If QMD is not
+installed or its local index is unavailable, use the printed `rg` fallback;
+this never blocks a task. Authorised roles still write notes only through the
+existing vault conventions and write policy.
+
+Serena is optional code intelligence, not a memory store. When its MCP server
+is configured, use it for symbols, references, and semantic edits; use normal
+search/file tools if it is unavailable. RTK remains the only token-output
+optimisation layer.
+
 ## Where to write
 
 You may write to the working tree (source files, tests, configs) **as your

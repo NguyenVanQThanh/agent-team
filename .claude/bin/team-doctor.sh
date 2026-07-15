@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# File:        team-doctor.sh
+# Description: Runs pre-flight checks for agent-team tools and configuration.
+# Created at:  2026-05-18   Created by: agent-team
+# Updated at:  2026-07-15   Updated by: Codex
+#
 # team-doctor.sh — pre-flight check for the agent team.
 # Verifies every dev CLI is installed, authenticated, and can be reached.
 # Run this once after setup, and any time something feels broken.
@@ -153,6 +158,28 @@ if command -v rtk >/dev/null 2>&1; then
 else
   warn "RTK        (tier-0 output compression)  rtk NOT on PATH (optional)"
   note "install per README \"Command-Output Compression\" section, then: rtk init -g --codex --gemini"
+fi
+
+# ------- Semantic vault retrieval and code intelligence (optional) -------
+
+header "Memory retrieval and code intelligence (optional)"
+
+if command -v qmd >/dev/null 2>&1; then
+  v="$(qmd --version 2>&1 | head -1 | tr -d '\r')" || v="?"
+  ok "QMD        (semantic vault retrieval)  qmd found  ${BLUE}[${v}]${NC}"
+  note "run: .claude/bin/memory-tools.sh status"
+else
+  warn "QMD (semantic vault retrieval) NOT on PATH (optional)"
+  note "install: npm install -g @tobilu/qmd"
+fi
+
+if command -v serena >/dev/null 2>&1; then
+  v="$(serena --version 2>&1 | head -1 | tr -d '\r')" || v="?"
+  ok "Serena     (symbol-level code intelligence)  serena found  ${BLUE}[${v}]${NC}"
+  note "run: .claude/bin/memory-tools.sh serena-check"
+else
+  warn "Serena (symbol-level code intelligence) NOT on PATH (optional)"
+  note "install: uv tool install -p 3.13 serena-agent"
 fi
 
 # ------- Codex per-dev reasoning flags -------

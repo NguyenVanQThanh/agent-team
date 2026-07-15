@@ -2,6 +2,15 @@
 
 A 1-leader + 14-dev autonomous coding team built on top of Claude Code.
 
+## Memory and token policy
+
+The team keeps canonical long-lived knowledge in `.claude/memory/`. QMD is an
+optional local semantic index for narrowly retrieving that Markdown, while
+Serena is optional symbol-level code intelligence with its own memory tools
+disabled. RTK remains the command-output compression layer. Headroom remains excluded
+because the verified Windows/Claude Code proxy path did not deliver useful
+compression for this workflow.
+
 The leader is a **Claude Opus subagent** that plans work, slices it into tasks, and spawns external CLI processes in parallel. The 14 "devs" are real background processes — each a different AI CLI (Codex, DeepSeek, Claude Haiku/Sonnet/Opus, Gemini) given a persona and a task.
 
 ---

@@ -207,6 +207,20 @@ leader or dev5 captures it into the vault during verification.
 - **fixes/**: after dev5 lands a non-trivial fix — what was wrong, what
   changed, what tests cover it. Link back to the bug.
 
+### Semantic retrieval and Serena
+
+QMD may index `.claude/memory/` locally to retrieve a small set of relevant
+canonical notes. Use `.claude/bin/memory-tools.sh bootstrap` once per machine,
+then `.claude/bin/memory-tools.sh update` after an authorised memory write and
+`.claude/bin/memory-tools.sh search "<question>"` before scanning the vault.
+Its cache and configuration are local runtime artefacts, never canonical
+memory. If QMD is unavailable, use its printed `rg` fallback and continue.
+
+Serena is not a durable memory store. Its project profile disables Serena
+memory tools so that symbol-aware retrieval and refactoring cannot conflict
+with the vault. Use it only for repository code intelligence; decisions, bugs,
+fixes, and architecture continue to live in `.claude/memory/`.
+
 ### Linking to task IDs
 
 Vault notes are durable; `tasks.md` rows are ephemeral (per run). When a task
