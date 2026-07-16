@@ -15,6 +15,19 @@ The leader is a **Claude Opus subagent** that plans work, slices it into tasks, 
 
 ---
 
+## Current Codex model lanes (2026-07-16)
+
+The active Codex pool has six teammates, all using `model_reasoning_effort=medium`:
+
+| Lane | Devs | Model | Task sizes |
+|------|------|-------|------------|
+| Luna | dev1, dev12, dev15 | `gpt-5.6-luna` | S/M |
+| Terra | dev2, dev13, dev16 | `gpt-5.6-terra` | M/L |
+
+For the overlapping M size, route simple local changes to Luna and multi-file
+or architectural work to Terra. This section is authoritative over older
+historical roster examples below.
+
 ## Architecture
 
 ```
@@ -79,16 +92,14 @@ implementer via the phase separator:
 
 ---
 
-## Codex Reasoning Levels
+## Codex Model Lanes
 
-Codex (gpt-5.5) supports per-dev reasoning effort. The mapping lives in [`.claude/bin/env.sh`](.claude/bin/env.sh):
+Codex model and reasoning settings live in [`.claude/bin/env.sh`](.claude/bin/env.sh). All six active Codex devs use medium reasoning:
 
-| Dev    | Reasoning effort | Typical use                              |
-|--------|-----------------|------------------------------------------|
-| dev12  | `low`           | Lint, smoke checks, trivial verify       |
-| dev1   | `medium`        | General coding, refactor (default)       |
-| dev2   | `high`          | Module planning, architecture scribe     |
-| dev13  | `xhigh`         | Hardest tasks, tournament partner        |
+| Devs | Model | Reasoning effort | Typical use |
+|------|-------|------------------|-------------|
+| dev1, dev12, dev15 | `gpt-5.6-luna` | `medium` | S/M coding, smoke and quick fixes |
+| dev2, dev13, dev16 | `gpt-5.6-terra` | `medium` | M/L planning, implementation and integration |
 
 Overrides are loaded automatically by `_runner.sh` via the `CODEX_FLAGS_DEV<N>` env vars.
 
@@ -190,7 +201,7 @@ Note IDs: `A-NNN` / `F-NNN` / `X-NNN` / `B-NNN`. Filenames: `<id>-<slug>.md`.
 | `.claude/bin/spawn-team.sh`      | Parallel launcher — validates ≥2 devs, builds prompts, waits |
 | `.claude/bin/env.sh`             | Central config for all CLI binaries and flags                 |
 | `.claude/bin/_runner.sh`         | Shared runner sourced by all wrappers — logs every invocation |
-| `.claude/bin/run_codex.sh`       | Codex CLI wrapper (dev1/2/12/13)                              |
+| `.claude/bin/run_codex.sh`       | Codex CLI wrapper (dev1/2/12/13/15/16)                        |
 | `.claude/bin/run_deepseek.sh`    | DeepSeek CLI wrapper (dev3/4/10)                              |
 | `.claude/bin/run_opus.sh`        | Claude Opus wrapper (dev5 implement, dev14 review)           |
 | `.claude/bin/run_haiku.sh`       | Claude Haiku wrapper (dev6/7)                                 |

@@ -45,7 +45,15 @@ See `.claude/config/coding-rules.md` for full templates per language.
 
 ## Agent team
 
-This repo is configured with a 1-leader + 14-dev agent team. **The leader is a
+### Current Codex routing
+
+The active Codex pool has six medium-reasoning agents: Luna (`dev1`, `dev12`,
+`dev15`) handles S/M tasks, while Terra (`dev2`, `dev13`, `dev16`) handles M/L
+tasks. M is an intentional overlap: route simple local work to Luna and
+multi-file or architectural work to Terra. Model flags live in
+`.claude/bin/env.sh`.
+
+This repo is configured with a 1-leader + 16-dev agent team. **The leader is a
 Claude subagent; the 14 devs are external agentic CLIs** (Codex / DeepSeek /
 Claude Haiku / Claude Sonnet / Claude Opus / Gemini), each spawned as a real
 background process. They communicate via shared files:
@@ -59,7 +67,7 @@ background process. They communicate via shared files:
 
 Definitions:
 - Leader subagent prompt: `.claude/agents/leader.md` (model: opus).
-- Dev persona prompts: `.claude/team/personas/dev{1..14}.md`.
+- Dev persona prompts: `.claude/team/personas/dev{1..16}.md`.
 
 Roster:
 
@@ -135,8 +143,8 @@ See `.claude/agents/leader.md` for when to use tournament vs solo dev5/dev13.
 
 ### Per-dev Codex reasoning levels
 
-The four Codex devs use different `model_reasoning_effort` levels (configured
-in `.claude/bin/env.sh` as `CODEX_FLAGS_DEV{1,2,12,13}`):
+The six Codex devs use `model_reasoning_effort=medium` with Luna/Terra model
+lanes (configured in `.claude/bin/env.sh` as `CODEX_FLAGS_DEV<N>`):
 
 - dev12 → `low`     (smoke tests, lint, quick verify)
 - dev1  → `medium`  (general M/L coding — default)

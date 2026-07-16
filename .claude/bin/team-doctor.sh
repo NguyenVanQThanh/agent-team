@@ -263,7 +263,7 @@ if (( QUICK == 0 )); then
   # Probe with the SAME flags the team actually uses (env.sh CODEX_FLAGS —
   # includes --dangerously-bypass-approvals-and-sandbox so codex runs
   # non-interactively). stdin from /dev/null avoids "stdin is not a terminal".
-  _codex_flags="${CODEX_FLAGS:-exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -c model=gpt-5.5}"
+  _codex_flags="${CODEX_FLAGS:-exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -c model=gpt-5.6-luna -c model_reasoning_effort=medium}"
   (( codex_ok ))    && probe "codex"    "codex $_codex_flags 'say hello in 5 words' </dev/null 2>&1" 45 1 \
                    || note "skip codex probe (binary missing)"
   (( deepseek_ok )) && probe "$deepseek_label" "$deepseek_bin -p 'say hello in 5 words' 2>&1 || $deepseek_bin 'say hello in 5 words' 2>&1" \

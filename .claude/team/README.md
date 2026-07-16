@@ -1,6 +1,6 @@
 # Agent team — usage guide
 
-A 1-leader + 14-dev agent team running on this repo. **Only the leader is a
+A 1-leader + 16-dev agent team running on this repo. **Only the leader is a
 Claude subagent.** The 14 devs are external agentic CLIs (Codex / DeepSeek /
 Claude Haiku / Claude Sonnet / Claude Opus / Gemini) launched as real background
 processes and communicating via shared files.
@@ -40,6 +40,17 @@ Post-phase memory  → dev10 (deepseek, always paired with ≥1 other dev)
 dev5 implements, dev14 reviews (generator ≠ verifier). dev14 is review-only
 and runs after the implementer via the phase separator:
 `spawn-team.sh dev13:codex:T-100 -- dev14:opus:T-100-review`.
+
+## Current Codex model lanes (2026-07-16)
+
+The active Codex roster has six medium-reasoning teammates. Luna handles S/M
+work; Terra handles M/L work. For the overlapping M size, route simple local
+changes to Luna and multi-file or architectural changes to Terra.
+
+| Lane | Devs | Model | Sizes |
+|------|------|-------|-------|
+| Luna | dev1, dev12, dev15 | `gpt-5.6-luna`, medium | S/M |
+| Terra | dev2, dev13, dev16 | `gpt-5.6-terra`, medium | M/L |
 
 ## How a run flows (3 phases)
 
@@ -106,7 +117,7 @@ The leader will plan and spawn. To watch CLIs live in a second terminal:
   team/
     tasks.md                    # shared task list (per run, leader writes)
     personas/
-      dev1.md ... dev14.md      # prompt fragments injected into each CLI
+      dev1.md ... dev16.md      # prompt fragments injected into each CLI
     status/
       dev1.status ... dev14.status    # status protocol; each CLI writes its own  [gitignored]
     runs/

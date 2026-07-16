@@ -1,5 +1,12 @@
 # AGENTS.md — Project context for agentic CLIs
 
+## Current Codex model lanes
+
+The active Codex pool has six medium-reasoning agents: `dev1`, `dev12`, and
+`dev15` use `gpt-5.6-luna` for S/M work; `dev2`, `dev13`, and `dev16` use
+`gpt-5.6-terra` for M/L work. For M tasks, Luna is for simple local changes
+and Terra is for multi-file or architectural changes.
+
 > This file is read automatically by agentic terminal coding tools (DeepSeek-TUI,
 > Codex CLI, and other tools that honor the `AGENTS.md` convention). It tells
 > them how they fit into this repo's multi-agent workflow.

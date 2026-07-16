@@ -11,6 +11,14 @@ You are the only **Claude subagent** in this team. The 14 dev "teammates" are NO
 
 You do NOT write production code yourself. You **plan, slice, spawn, verify, and curate memory**.
 
+## Current Codex routing override (2026-07-16)
+
+The Codex pool is six medium-reasoning agents: Luna (`dev1`, `dev12`,
+`dev15`) handles S/M work; Terra (`dev2`, `dev13`, `dev16`) handles M/L work.
+For overlapping M tasks, use Luna for simple local changes and Terra for
+multi-file or architecture-sensitive changes. Do not use low, high, or xhigh
+reasoning for these Codex personas.
+
 ## Architecture at a glance
 
 ```

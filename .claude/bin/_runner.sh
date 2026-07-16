@@ -9,7 +9,7 @@
 set -uo pipefail
 # Unset *_FLAGS before sourcing env.sh so parent-shell exports can't override
 # the project defaults (prevents BL-01-style leaks of stale flags like --yolo).
-unset CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13 \
+unset CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13 CODEX_FLAGS_DEV15 CODEX_FLAGS_DEV16 \
       DEEPSEEK_FLAGS OPUS_FLAGS OPUS_BIN \
       HAIKU_FLAGS HAIKU_BIN SONNET_FLAGS SONNET_BIN \
       GEMINI_FLAGS GEMINI_BIN 2>/dev/null || true

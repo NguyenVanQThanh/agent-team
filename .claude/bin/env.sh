@@ -16,25 +16,21 @@ unset _env_dir
 : "${OPUS_BIN:=claude --model opus}"
 : "${OPUS_FLAGS:=--dangerously-skip-permissions -p}"
 
-# ---- Codex CLI (dev1, dev2, dev12, dev13) ----
-# Codex CLI v0.130+ supports `exec` for non-interactive runs.
-# Reasoning level ladder per dev (model gpt-5.5 picker shows: low / medium / high / xhigh):
-#   dev12 = low       (smoke / lint / quick verify)        — fast, cheap
-#   dev1  = medium    (general coder, refactor M/L)         — default workhorse
-#   dev2  = high      (module planner, architecture scribe) — reasoning-heavy, low output
-#   dev13 = xhigh     (senior + tournament partner w/ dev5) — hardest tasks
-# If your Codex CLI rejects "xhigh", try "high" or check `codex --help` for the
-# accepted values of -c model_reasoning_effort.
-_CODEX_BASE='exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -c model="gpt-5.5"'
+# ---- Codex CLI (dev1, dev2, dev12, dev13, dev15, dev16) ----
+# All Codex teammates use medium reasoning. Luna is the S/M lane; Terra is the
+# M/L lane. M is intentionally an overlap so the leader can route simple local
+# work to Luna and multi-file or architectural work to Terra.
+_CODEX_BASE='exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox'
+_CODEX_LUNA="$_CODEX_BASE -c model=\"gpt-5.6-luna\" -c model_reasoning_effort=\"medium\""
+_CODEX_TERRA="$_CODEX_BASE -c model=\"gpt-5.6-terra\" -c model_reasoning_effort=\"medium\""
 
-# Fallback (used if no per-dev override is set).
-: "${CODEX_FLAGS:=$_CODEX_BASE -c model_reasoning_effort=\"medium\"}"
-
-# Per-dev overrides (picked up by _runner.sh via CODEX_FLAGS_<DEV>).
-: "${CODEX_FLAGS_DEV1:=$_CODEX_BASE -c model_reasoning_effort=\"medium\"}"
-: "${CODEX_FLAGS_DEV2:=$_CODEX_BASE -c model_reasoning_effort=\"high\"}"
-: "${CODEX_FLAGS_DEV12:=$_CODEX_BASE -c model_reasoning_effort=\"low\"}"
-: "${CODEX_FLAGS_DEV13:=$_CODEX_BASE -c model_reasoning_effort=\"xhigh\"}"
+: "${CODEX_FLAGS:=$_CODEX_LUNA}"
+: "${CODEX_FLAGS_DEV1:=$_CODEX_LUNA}"
+: "${CODEX_FLAGS_DEV2:=$_CODEX_TERRA}"
+: "${CODEX_FLAGS_DEV12:=$_CODEX_LUNA}"
+: "${CODEX_FLAGS_DEV13:=$_CODEX_TERRA}"
+: "${CODEX_FLAGS_DEV15:=$_CODEX_LUNA}"
+: "${CODEX_FLAGS_DEV16:=$_CODEX_TERRA}"
 
 # ---- CodeWhale / DeepSeek TUI (dev3, dev4, dev10) ----
 # Empty DEEPSEEK_BIN enables automatic resolution: codewhale, then deepseek-tui.
@@ -65,7 +61,7 @@ _CODEX_BASE='exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandb
 
 # Export so child processes (CLIs) see them.
 export OPUS_BIN OPUS_FLAGS
-export CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13
+export CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13 CODEX_FLAGS_DEV15 CODEX_FLAGS_DEV16
 export DEEPSEEK_BIN DEEPSEEK_FLAGS
 export HAIKU_BIN HAIKU_FLAGS SONNET_BIN SONNET_FLAGS GEMINI_BIN GEMINI_FLAGS
 
@@ -84,7 +80,8 @@ declare -A DEV_SIZES=(
   [dev6]="M"       [dev7]="M"
   [dev8]="L"       [dev9]="L"
   [dev10]="M"      [dev11]="M"
-  [dev12]="S M"    [dev13]="L XL"
+  [dev12]="S M"    [dev13]="M L"
+  [dev15]="S M"    [dev16]="M L"
   [dev14]="L XL"
 )
 export DEV_SIZES

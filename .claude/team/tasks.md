@@ -9,7 +9,7 @@ into the row's `status` and `note` columns.
 
 | Dev    | CLI      |
 |--------|----------|
-| dev1, dev2, dev12, dev13 | `codex`  |
+| dev1, dev2, dev12, dev13, dev15, dev16 | `codex`  |
 | dev3, dev4, dev10        | `deepseek` |
 | dev5   | `claude --model opus`  |
 | dev6, dev7 | `claude --model haiku` |
