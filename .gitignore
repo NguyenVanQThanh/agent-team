@@ -8,12 +8,6 @@
 !.claude/team/runs/.gitignore
 !.claude/team/status/.gitkeep
 
-# Memory vault notes — project-specific, generated per project
-.claude/memory/architecture/A-*.md
-.claude/memory/features/F-*.md
-.claude/memory/fixes/X-*.md
-.claude/memory/bugs/B-*.md
-
 # Local Claude / DeepSeek caches that may hold credentials
 .deepseek/
 .claude/.cache/

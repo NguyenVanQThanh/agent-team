@@ -186,6 +186,23 @@ fix write-ups — lives in an Obsidian-style vault at `.claude/memory/`.
 - Keep notes short and link-heavy. A bug note doesn't repeat the fix — it
   links to `[[fixes/X-NNN-...]]`.
 
+### Git-tracking policy
+
+The vault's whole point is to let agents (and machines) understand the
+project from `.claude/memory/` instead of re-reading the entire repo — so it
+**must travel with the repo**.
+
+- **Tracked in git (commit these):** `architecture/`, `features/`, `fixes/`,
+  `bugs/`, `_index.md`, `_templates/`, per-folder `_moc.md`. These are
+  canonical, cross-machine knowledge. Never add these paths to `.gitignore`.
+- **Ignored (per-machine only):** `.claude/memory/user-prefs/` (personal
+  preferences), plus any local cache/runtime dirs created by tooling
+  (e.g. QMD's index cache — never treat a cache as canonical memory).
+- Before adding anything under `.claude/memory/` to `.gitignore`, check
+  whether it's a personal/local artifact or shared project knowledge. When in
+  doubt, track it — the cost of an extra committed note is far lower than the
+  cost of an agent on another machine silently missing architecture context.
+
 ### Write policy (who can edit what)
 
 Only a few senior agents may **write** to the vault. The other devs read it for
