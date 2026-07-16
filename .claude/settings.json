@@ -24,4 +24,18 @@
       "Bash(grep **/.env*)",
       "mcp__playwright",
       "mcp__puppeteer",
-      
+      "mcp__chrome",
+      "mcp__chrome-devtools",
+      "mcp__browser",
+      "mcp__browsermcp",
+      "mcp__browserbase",
+      "mcp__fetch",
+      "mcp__web"
+    ],
+    "allow": [
+      "Read(**/.env.example)",
+      "Read(**/.env.sample)",
+      "Read(**/.env.template)"
+    ]
+  }
+}
