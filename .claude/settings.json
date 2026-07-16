@@ -1,4 +1,6 @@
 {
+  "enableAllProjectMcpServers": false,
+  "enabledMcpjsonServers": [],
   "permissions": {
     "deny": [
       "Read(**/.env)",
@@ -19,12 +21,7 @@
       "Bash(head *.env*)",
       "Bash(tail *.env*)",
       "Bash(grep *.env*)",
-      "Bash(grep **/.env*)"
-    ],
-    "allow": [
-      "Read(**/.env.example)",
-      "Read(**/.env.sample)",
-      "Read(**/.env.template)"
-    ]
-  }
-}
+      "Bash(grep **/.env*)",
+      "mcp__playwright",
+      "mcp__puppeteer",
+      
