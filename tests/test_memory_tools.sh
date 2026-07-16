@@ -65,8 +65,11 @@ assert_contains "$fallback_output" "fallback: rg -n --glob '*.md' -- retry polic
 failed_qmd_output="$(QMD_BIN="$failing_qmd" "$TOOL" search "retry policy" 2>&1 || true)"
 assert_contains "$failed_qmd_output" "fallback: rg -n --glob '*.md' -- retry policy .claude/memory" "failed QMD fallback"
 
-grep -Fqx 'added_modes:' "$REPO/.serena/project.yml" || fail "Serena profile must declare added_modes"
-grep -Fqx '  - no-memories' "$REPO/.serena/project.yml" || fail "Serena profile must disable memories"
+if grep -Fq 'no-memories' "$REPO/.serena/project.yml"; then
+  fail "Serena profile must enable hybrid memories"
+fi
+grep -Fq 'read_only_memory_patterns:' "$REPO/.serena/project.yml" \
+  || fail "Serena profile must protect global memories"
 
 serena_output="$(STUB_LOG="$serena_log" SERENA_BIN="$stub_serena" "$TOOL" serena-check)"
 assert_contains "$serena_output" "serena start-mcp-server --project $REPO --context=codex" "Serena launch command"
