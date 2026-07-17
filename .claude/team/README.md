@@ -89,7 +89,8 @@ In Claude Code (CLI or extension), from this repo:
 > use the leader agent: <your request>
 ```
 
-The leader will plan and spawn. To watch CLIs live in a second terminal:
+The leader will plan, request **plan approval**, build the orchestrator, request
+**dev roster approval**, and then spawn. To watch CLIs live in a second terminal:
 
 ```bash
 .claude/bin/team-tui.sh

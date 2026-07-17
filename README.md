@@ -14,7 +14,11 @@ compression layer. Headroom remains excluded because the verified
 Windows/Claude Code proxy path did not deliver useful compression for this
 workflow.
 
-The leader is a **Claude Opus subagent** that plans work, slices it into tasks, and spawns external CLI processes in parallel. The 14 "devs" are real background processes — each a different AI CLI (Codex, DeepSeek, Claude Haiku/Sonnet/Opus, Gemini) given a persona and a task.
+The leader is a **Claude Opus subagent** that plans work, slices it into tasks,
+asks for dev roster approval, and then spawns external CLI processes in
+parallel. The 14 "devs" are real background processes — each a different AI
+CLI (Codex, DeepSeek, Claude Haiku/Sonnet/Opus, Gemini) given a persona and a
+task.
 
 ---
 
@@ -328,7 +332,10 @@ All checks should pass (green). Warnings won't block the team but fix them if a 
 
 **3. Run the team:**
 
-Delegate work to the leader agent from a Claude Code chat session. Mention "team", "agent team", or "use the team" to trigger the leader subagent. The leader will plan tasks, write `.claude/team/tasks.md`, and spawn devs.
+Delegate work to the leader agent from a Claude Code chat session. Mention
+"team", "agent team", or "use the team" to trigger the leader subagent. The
+leader presents a plan and waits for **plan approval**, writes the orchestrator
+tasks, asks for **dev roster approval**, and only then spawns devs.
 
 ---
 

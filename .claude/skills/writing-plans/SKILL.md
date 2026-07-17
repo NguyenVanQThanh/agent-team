@@ -155,12 +155,17 @@ If you find issues, fix them inline. No need to re-review — just fix and move 
 
 ## Execution Handoff
 
-After saving the plan, hand it to the agent-team **leader** for execution:
+After saving the plan, hand it to the agent-team **leader** for orchestration,
+not direct execution. The plan must first receive explicit **plan approval**.
+After that approval, the leader creates the orchestrator/task rows and asks the
+user for **dev roster approval**. The leader waits if the roster is missing or
+declined; it does not spawn or self-execute automatically.
 
-**"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. The leader will
-slice it into `.claude/team/tasks.md` rows and spawn devs in parallel via
-`.claude/bin/spawn-team.sh` (≥ 2 devs per call). Execution is orchestrated by the
-leader — this session does not self-dispatch subagents."**
+**"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. After plan
+approval, hand it to the leader. The leader creates the orchestrator and task
+rows, asks for dev roster approval, then — only after approval — spawns devs in
+parallel via `.claude/bin/spawn-team.sh` (≥ 2 devs per call). This session does
+not self-execute the plan or self-dispatch subagents."**
 
 > Note: in vanilla Superpowers this step offered `subagent-driven-development` /
 > `executing-plans`. Those are intentionally **not** part of this repo — the

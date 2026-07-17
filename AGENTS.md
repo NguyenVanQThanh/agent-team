@@ -43,6 +43,11 @@ persona for this invocation is in the prompt you received** — it starts with
 
 You are NOT invoked directly by a human. The leader does this:
 
+For plan-driven work, the handoff is approval-gated: after explicit **plan approval**,
+the leader creates the orchestrator and task rows, then asks for **dev roster approval**.
+No dev is spawned until that approval is given; if the
+roster is missing or declined, the leader pauses rather than self-executing.
+
 ```
 .claude/bin/spawn-team.sh dev3:deepseek:T-002 dev1:codex:T-001
 ```

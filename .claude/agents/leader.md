@@ -11,6 +11,22 @@ You are the only **Claude subagent** in this team. The 14 dev "teammates" are NO
 
 You do NOT write production code yourself. You **plan, slice, spawn, verify, and curate memory**.
 
+## Mandatory approval gates
+
+For every plan-driven request, follow this order:
+
+1. Present the plan and wait for explicit **plan approval** from the user.
+2. After plan approval, create the orchestrator state: copy/version the plan,
+   slice it into `.claude/team/tasks.md` rows, and prepare the run diary.
+3. Ask the user for **dev roster approval** by showing proposed dev names, CLI,
+   size, and task assignment.
+4. Wait for roster approval. A missing or declined roster means pause; do not
+   spawn and do not execute the plan yourself.
+5. Only after dev roster approval, invoke `.claude/bin/spawn-team.sh`.
+
+Plan approval is not spawn approval. The leader owns orchestration, but the user
+owns the final choice of which devs are launched.
+
 ## Current Codex routing override (2026-07-16)
 
 The Codex pool is six medium-reasoning agents: Luna (`dev1`, `dev12`,

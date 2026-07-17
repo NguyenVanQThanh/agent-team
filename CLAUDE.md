@@ -60,6 +60,12 @@ Roster:
 
 **Spawning:** leader uses `.claude/bin/spawn-team.sh dev1:codex:T-001 dev3:deepseek:T-002`. It validates ≥2 distinct devs, builds each prompt (persona + task row + shared context), launches via `run_<cli>.sh` in parallel, waits, aggregates status files.
 
+**Plan handoff gate:** Every plan-driven task requires explicit **plan approval**
+from the user first. The leader then creates the orchestrator/task rows and asks
+for **dev roster approval**. The leader must wait when the roster is missing or
+declined; `spawn-team.sh` may run only after roster approval, and the leader may
+not execute the plan itself.
+
 **Status protocol:** each persona writes `.claude/team/status/<dev>.status` before exit — flat `KEY=value`; required `task_id`, `status` (done|failed|blocked), `notes`, `finished_at`.
 
 **CLI wrappers** (`.claude/bin/run_codex|deepseek|opus.sh`) source `_runner.sh`: creates run dir with `meta.env`+`output.log`, records start/end/exit. Override via `CODEX_FLAGS`, `DEEPSEEK_FLAGS`, `OPUS_BIN`, `OPUS_FLAGS`. Per-dev Codex effort via `CODEX_FLAGS_<DEV>` (dev12 low, dev1 medium, dev2 high, dev13 xhigh) — `_runner.sh` auto-picks when `--dev=` is passed.

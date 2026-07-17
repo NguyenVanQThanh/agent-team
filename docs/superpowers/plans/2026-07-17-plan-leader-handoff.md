@@ -72,6 +72,8 @@ Expected: FAIL because the current documents do not contain the exact `dev roste
 - Modify: `CLAUDE.md`
 - Modify: `.claude/agents/leader.md`
 - Modify: `.claude/skills/writing-plans/SKILL.md`
+- Modify: `README.md`
+- Modify: `.claude/team/README.md`
 - Modify: `docs/USING-THE-TEAM.md`
 
 **Interfaces:**

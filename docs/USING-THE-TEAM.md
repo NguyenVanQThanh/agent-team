@@ -39,15 +39,21 @@ the work and mention the team:
 
 > "Use the agent team to add feature X to module Y, with tests."
 
-The **leader** subagent then automatically:
+The **leader** subagent then follows an approval-gated flow:
 
-1. Reads the memory vault (`.claude/memory/`) for context.
-2. Slices the work into `.claude/team/tasks.md` rows (each sized S/M/L/XL).
-3. Spawns devs in parallel via `spawn-team.sh` (≥ 2 devs per call), preferring
-   the cheaper non-Claude CLIs first.
-4. Waits, aggregates each `.claude/team/status/<dev>.status`, updates tasks.md
+1. Reads the memory vault (`.claude/memory/`) for context and presents a plan.
+2. Waits for your explicit **plan approval**.
+3. Creates the orchestrator state and slices the approved plan into
+   `.claude/team/tasks.md` rows (each sized S/M/L/XL).
+4. Proposes a dev roster and asks for **dev roster approval**.
+5. Only after your approval, spawns devs in parallel via `spawn-team.sh` (≥ 2
+   devs per call), preferring the cheaper non-Claude CLIs first.
+6. Waits, aggregates each `.claude/team/status/<dev>.status`, updates tasks.md
    and the run diary.
-5. Post-phase: dev10 writes memory notes; dev9/dev14 review when warranted.
+7. Post-phase: dev10 writes memory notes; dev9/dev14 review when warranted.
+
+Plan approval does not authorize spawning. If the roster is missing or declined,
+the leader pauses without spawning or executing the plan itself.
 
 Trigger words that route to the leader: **"team", "agent team", "leader",
 "use the team"**, or any non-trivial multi-file request.
