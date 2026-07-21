@@ -16,28 +16,20 @@ unset _env_dir
 : "${OPUS_BIN:=claude --model opus}"
 : "${OPUS_FLAGS:=--dangerously-skip-permissions -p}"
 
-# ---- Codex CLI (dev1, dev2, dev12, dev13, dev15, dev16) ----
-# All Codex teammates use medium reasoning. Luna is the S/M lane; Terra is the
-# M/L lane. M is intentionally an overlap so the leader can route simple local
-# work to Luna and multi-file or architectural work to Terra.
-_CODEX_BASE='exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox'
-_CODEX_LUNA="$_CODEX_BASE -c model=\"gpt-5.6-luna\" -c model_reasoning_effort=\"medium\""
-_CODEX_TERRA="$_CODEX_BASE -c model=\"gpt-5.6-terra\" -c model_reasoning_effort=\"medium\""
+# ---- Codex lane (dev1, dev2, dev12, dev13, dev15, dev16) ----
+# Runs `claude` (Claude Code CLI) via 9router with the Codex model prefix
+# (cx/*), NOT the standalone `codex` binary. run_codex.sh renders the right
+# --settings file per dev (Luna: dev1/12/15, Terra: dev2/13/16) and exports
+# CODEX_FLAGS itself before calling runner_exec — the default below is only a
+# fallback if run_codex.sh's own export were skipped.
+: "${CODEX_FLAGS:=--dangerously-skip-permissions -p}"
 
-: "${CODEX_FLAGS:=$_CODEX_LUNA}"
-: "${CODEX_FLAGS_DEV1:=$_CODEX_LUNA}"
-: "${CODEX_FLAGS_DEV2:=$_CODEX_TERRA}"
-: "${CODEX_FLAGS_DEV12:=$_CODEX_LUNA}"
-: "${CODEX_FLAGS_DEV13:=$_CODEX_TERRA}"
-: "${CODEX_FLAGS_DEV15:=$_CODEX_LUNA}"
-: "${CODEX_FLAGS_DEV16:=$_CODEX_TERRA}"
-
-# ---- CodeWhale / DeepSeek TUI (dev3, dev4, dev10) ----
-# Empty DEEPSEEK_BIN enables automatic resolution: codewhale, then deepseek-tui.
-# Set DEEPSEEK_BIN locally to override the detected command, including its flags.
-: "${DEEPSEEK_BIN:=}"
-# `exec --auto` = agentic mode with write_file + exec_shell tools (v0.8.x+).
-: "${DEEPSEEK_FLAGS:=exec --auto}"
+# ---- DeepSeek lane (dev3, dev4, dev10) ----
+# Runs `claude` (Claude Code CLI) via 9router with the DeepSeek model prefix
+# (ds/*), NOT codewhale/deepseek-tui. run_deepseek.sh renders
+# settings-deepseek.json and exports DEEPSEEK_FLAGS itself before calling
+# runner_exec — the default below is only a fallback.
+: "${DEEPSEEK_FLAGS:=--dangerously-skip-permissions -p}"
 
 # ---- Claude Haiku (dev6, dev7) ----
 # NOTE: --dangerously-skip-permissions is REQUIRED for headless runs.
@@ -61,8 +53,7 @@ _CODEX_TERRA="$_CODEX_BASE -c model=\"gpt-5.6-terra\" -c model_reasoning_effort=
 
 # Export so child processes (CLIs) see them.
 export OPUS_BIN OPUS_FLAGS
-export CODEX_FLAGS CODEX_FLAGS_DEV1 CODEX_FLAGS_DEV2 CODEX_FLAGS_DEV12 CODEX_FLAGS_DEV13 CODEX_FLAGS_DEV15 CODEX_FLAGS_DEV16
-export DEEPSEEK_BIN DEEPSEEK_FLAGS
+export CODEX_FLAGS DEEPSEEK_FLAGS
 export HAIKU_BIN HAIKU_FLAGS SONNET_BIN SONNET_FLAGS GEMINI_BIN GEMINI_FLAGS
 
 # ---- Local tool bin: RTK (tier-0 command-output compression) ----

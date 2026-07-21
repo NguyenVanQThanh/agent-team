@@ -97,6 +97,7 @@ _runner_cleanup() {
       [[ -n "$missing" ]] && echo "files_missing=$missing"
     fi
     [[ -n "$notes_runner" ]] && printf 'notes_runner=%q\n' "$notes_runner"
+    true
   } >> "$_RUNNER_META"
 }
 
@@ -105,6 +106,31 @@ runner_resolve_repo() {
   d="$( cd -- "$(dirname -- "${BASH_SOURCE[1]:-$0}")" &>/dev/null && pwd )"
   while [[ "$d" != "/" && ! -d "$d/.claude" ]]; do d="$(dirname "$d")"; done
   echo "$d"
+}
+
+# runner_render_settings <template-path>
+# Substitutes __NINEROUTER_KEY__ with $NINEROUTER_KEY and __NINEROUTER_BASE_URL__
+# with $NINEROUTER_BASE_URL (both read from the process environment — a
+# Windows user/system env var, env.local.sh, or a plain export all work), and
+# writes the result under .claude/team/runs/.rendered-settings/<basename>, so
+# the real key never touches a committed file. Echoes the rendered path.
+runner_render_settings() {
+  local template="$1"
+  [[ -f "$template" ]] || { echo "error: settings template not found: $template" >&2; return 1; }
+  if [[ -z "${NINEROUTER_KEY:-}" ]]; then
+    echo "error: NINEROUTER_KEY not set (set it as a Windows env var, or add it to .claude/bin/env.local.sh)" >&2
+    return 1
+  fi
+  local base_url="${NINEROUTER_BASE_URL:-https://9router.acegalaxy.co/v1}"
+  local repo out_dir out_path
+  repo="$(runner_resolve_repo)"
+  out_dir="$repo/.claude/team/runs/.rendered-settings"
+  mkdir -p "$out_dir"
+  out_path="$out_dir/$(basename "$template")"
+  sed -e "s#__NINEROUTER_KEY__#${NINEROUTER_KEY}#g" \
+      -e "s#__NINEROUTER_BASE_URL__#${base_url}#g" \
+      "$template" > "$out_path"
+  echo "$out_path"
 }
 
 runner_exec() {
